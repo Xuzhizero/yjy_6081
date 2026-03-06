@@ -62,6 +62,19 @@
 !configs/
 !configs/**
 
+# ===== Group A 激进版算法 =====
+!module/neuAPF_6081_new/
+!module/neuAPF_6081_new/*.py
+!module/neuAPF_6081_new/*.spec
+!module/neuAPFFollow_6081/
+!module/neuAPFFollow_6081/*.py
+!module/neuAPFFollow_6081/*.spec
+
+# ===== Group B 保守版算法 =====
+!module/neuAPF_6081_old/
+!module/neuAPF_6081_old/*.py
+!module/neuAPF_6081_old/*.spec
+
 # ===== haituf_frontend (船舶信息系统前端) =====
 !haituf_frontend/
 !haituf_frontend/**
