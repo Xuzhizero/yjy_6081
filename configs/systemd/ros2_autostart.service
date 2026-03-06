@@ -1,0 +1,15 @@
+[Unit]
+Description=ROS 2 Autostart Service
+After=network.target
+
+[Service]
+Type=simple
+User=ship6081
+Nice=-10
+ExecStartPre=/bin/sleep 10
+ExecStart=/bin/bash -c 'source /opt/ros/humble/setup.bash; source ~/control_ws/install/setup.bash; ros2 launch startup node_launch.py'
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

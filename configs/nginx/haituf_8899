@@ -1,0 +1,28 @@
+server {
+    listen 8899;
+    server_name localhost _;
+
+    # 指向目标目录
+    root /var/www/haituf;
+    index 1_shilliang.html  index.htm index.php;
+
+    # 主位置配置
+    location / {
+        try_files $uri $uri/ =404;
+        autoindex off;  # 生产环境建议关闭目录浏览
+    }
+
+    # 静态文件缓存优化
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # 日志配置
+    access_log /var/log/nginx/haituf_8899_access.log;
+    error_log /var/log/nginx/haituf_8899_error.log;
+
+    # 安全设置
+    client_max_body_size 10M;
+    server_tokens off;
+}

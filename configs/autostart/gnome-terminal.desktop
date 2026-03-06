@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Exec=gnome-terminal -- bash -c "/home/ship6081/run.sh; exec bash"\n
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name[zh_CN]=2
+Name=2
+Comment[zh_CN]=
+Comment=

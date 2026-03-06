@@ -1,0 +1,4923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 引入 Element UI CSS -->
+  <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+  <title>船舶监控首页</title>
+  <style>
+
+    .el-drawer__header{
+      display: none;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    .autofit-container {
+      position: relative;
+      background: #1a1a1a;
+    }
+    @font-face {
+      font-family: 'Roboto';
+      src: url('Fonts/Roboto-Medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+
+    body {
+      font-family:'Roboto';
+      background: #1a1a1a;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      position: relative;
+    }
+
+    /* 顶部header */
+    .header {
+      height: 48px;
+      background: #2a2a2a;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid #333;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .fullscreen-btn {
+      padding: 6px 12px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .fullscreen-btn:hover {
+      background: #0052a3;
+    }
+
+    .menu-icon {
+      width: 24px;
+      height: 24px;
+      background: #555;
+      cursor: pointer;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+      background: #444;
+    }
+
+    .header-tabs {
+      display: flex;
+      gap: 10px;
+      margin-left: 40px;
+    }
+
+    .tab {
+      padding: 8px 20px;
+      background: #333;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .tab.active {
+      background: #0066cc;
+    }
+
+    /* 主内容区域：左右分布 */
+    .content {
+      height: calc(100% - 48px);
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    /* 左边区域：890px */
+    .left-section {
+      width: 890px;
+      height: 100%; /* 强制设置高度 */
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* 右边区域：1000px */
+    .right-section {
+      width: 1000px;
+      height: 100%; /* 强制设置高度 */
+      background: #1D1D1D;
+      border: 1px solid #444;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* 防止内容溢出 */
+    }
+
+    /* 左边上半部分：500px高 */
+    .left-top {
+      height: 505px;
+      flex-shrink: 0; /* 不允许收缩 */
+      background: #1D1D1D;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 24px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    /* 左侧数据列 */
+    .data-column-left {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 35px;
+      width: 150px;
+    }
+
+    /* 右侧数据列 */
+    .data-column-right {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 35px;
+      width: 100px;
+      .line-right {
+        width: 100%;
+        height: 1px;
+        background: rgba(255,255,255,0.1);
+      }
+    }
+
+    /* 数据读取显示 - 基础样式 */
+    .data-readout {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+
+    /* HDG 样式 */
+    .data-readout-hdg .data-value {
+      font-size: 40px;
+      letter-spacing: -3.5px;
+      font-weight: bold;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+    }
+
+    .data-readout-hdg .data-label {
+      font-size: 18px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
+    /* COG 样式 */
+    .data-readout-cog .data-value {
+      font-size: 40px;
+      letter-spacing: -3.5px;
+      font-weight: bold;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+    } 
+
+    .data-readout-cog .data-label {
+      font-size: 18px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
+    /* ROT 样式 */
+    .data-readout-rot .data-value {
+      font-size: 40px;
+      letter-spacing: -3.5px;
+      font-weight: bold;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+    }
+
+    .data-readout-rot .data-label {
+      font-size: 18px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
+    /* Wind 样式 */
+    .data-readout-wind .data-value {
+      font-size: 40px;
+      letter-spacing: -3.5px;
+      font-weight: bold;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+    }
+
+    .data-readout-wind .data-label {
+      font-size: 18px;
+      color: #aaa;
+      margin-top: 2px;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    /* Current 样式 */
+    .data-readout-current .data-value {
+      font-size: 40px;
+      letter-spacing: -3.5px;
+      font-weight: bold;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+    }
+
+    .data-readout-current .data-label {
+      font-size: 18px;
+      color: #aaa;
+      margin-top: 2px;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    /* 标签主文本和单位样式 */
+    .data-label {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 18px;
+    }
+
+    .label-main {
+      font-weight: 500;
+      color: #FFFFFF;
+    }
+
+    .label-unit {
+      font-weight: normal;
+      font-size: 16px;
+      opacity: 0.8;
+    }
+
+    .attitude-readout-label-main {
+      font-size: 16px;
+      white-space: nowrap;
+    }
+
+    .data-source {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 84px; /* 让 SRC 文本与箭头两端对齐 */
+      color: #888;
+      margin-top: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      user-select: none;
+    }
+
+    .data-source > span {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .data-source:hover {
+      color: #aaa;
+    }
+
+    .dropdown-arrow {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid #888;
+      cursor: pointer;
+      transition: border-top-color 0.2s;
+    }
+
+    .data-source:hover .dropdown-arrow {
+      border-top-color: #aaa;
+    }
+
+    /* SRC 下拉菜单 */
+    .data-source-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      min-width: 84px;
+      background: rgba(35, 35, 35, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 6px 0;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
+      z-index: 99999;
+    }
+
+    .data-source-menu-item {
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #cfcfcf;
+      line-height: 1;
+    }
+
+    .data-source-menu-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .data-source-menu-item.active {
+      background: rgba(0, 102, 204, 0.25);
+      color: #fff;
+    }
+
+    /* 中央罗盘区域 */
+    .compass-container {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .compass-outer-ring {
+      width: 373px;
+      height: 373px;
+      position: relative;
+      margin: 0 auto;
+    }
+    .compass-direction-ring{
+      position: absolute;
+      bottom: 0%;
+      left: 50%;
+      transform-origin: center center;
+      width: 0px;
+      height: 228px;
+      background-color: #0066cc;
+      z-index: 9999;
+      transform-origin: 100% 100%;
+      animation: rotate360 20s linear infinite;
+    }
+     /* 360度持续旋转动画 */
+     @keyframes rotate360 {
+      from {
+        transform:translate(-50%, -82%) rotate(0deg);
+      }
+      to {
+        transform:translate(-50%, -82%) rotate(360deg);
+      }
+    }
+
+    .compass-direction-ring::before{
+      content: '';
+      background-image: url('asserts/img/direction.svg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+      width: 58px;
+      height: 52px;
+      position: absolute;
+      transform: translate(-45%, -50%) rotate(0deg);
+    }
+
+    /*  第二个旋转 */
+    .compass-direction-2{
+      position: absolute;
+      bottom: 0%;
+      left: 50%;
+      transform-origin: center center;
+      width: 0px;
+      height: 228px;
+      background-color: #0066cc;
+      z-index: 9999;
+      transform-origin: 100% 100%;
+      animation: rotate360 10s linear infinite;
+    }
+    .compass-direction-2::before{
+      content: '';
+      background-image: url('asserts/img/icon_1.svg');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+      width: 20px;
+      height: 54px;
+      position: absolute;
+      transform: translate(-41%, -50%) rotate(0deg);
+    }
+    .compass-scale {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* 蓝色箭头（主要方向） */
+    .compass-blue-arrow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-origin: center center;
+      width: 320px;
+      height: 236px;
+      z-index: 5;
+      animation:identifier 7s linear infinite ;
+    }
+    /* 360度旋转箭头 */
+    @keyframes identifier {
+      from {
+        transform: translate(-50%, -50%) rotate(0deg);
+      }
+      to {
+        transform: translate(-50%, -50%) rotate(360deg);
+      }
+      
+    }
+
+    .compass-blue-arrow img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* 灰色箭头 - CSS绘制 */
+    .compass-gray-arrow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-origin: center center;
+      width: 0;
+      height: 0;
+      z-index: 4;
+      animation: identifier 15s linear infinite;
+    }
+
+    /* 箭头主体 */
+    .compass-gray-arrow::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 140px;
+      height: 5px;
+      background: #888;
+      /* opacity: 0.7; */
+    }
+
+    /* 箭头头部 */
+    .compass-gray-arrow::after {
+      content: '';
+      position: absolute;
+      left: 128px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 27px solid #888;
+      border-top: 12px solid transparent;
+      border-bottom: 12px solid transparent;
+      /* opacity: 0.7; */
+    }
+
+    /* 底部指向图标 - 移到中心 */
+    .compass-bottom-pointer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 133px !important;
+      height: 133px !important;
+      z-index: 6;
+    }
+
+    .compass-bottom-pointer img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* 方向标记 */
+    .compass-direction {
+      position: absolute;
+      font-size: 20px;
+      font-weight: normal;
+      color: #fff;
+      z-index: 3;
+      text-shadow: 0 0 3px rgba(0,0,0,0.8);
+    }
+
+    /* N 标记 - 带三角形背景 */
+    .compass-direction.n {
+      top: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .compass-direction.n::before {
+      content: '';
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 45px;
+      height: 45px;
+      background-image: url('asserts/img/icon_2.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      z-index: -1;
+    }
+
+    /* 主要方向 S E W 放在外圈外面 */
+    .compass-direction.s { bottom: -35px; left: 50%; transform: translateX(-50%); }
+    .compass-direction.e { right: -35px; top: 50%; transform: translateY(-50%); }
+    .compass-direction.w { left: -35px; top: 50%; transform: translateY(-50%); }
+    
+    /* 次要方向 NE SE SW NW 保持在环上 */
+    .compass-direction.ne { top: 16px; right: 14px; }
+    .compass-direction.se { bottom: 16px; right: 14px; }
+    .compass-direction.sw { bottom: 16px; left: 14px; }
+    .compass-direction.nw { top:16px; left: 14px; }
+
+    /* 左边下半部分：6个小格子 */
+    .left-bottom {
+      flex: 1; /* 占用剩余空间 */
+      display: grid;
+      grid-template-columns: repeat(3, 290.33px);  /* 3列，每列291.33px */
+      grid-template-rows: repeat(2, 1fr);     /* 2行，自动分配高度 */
+      gap: 10px;
+      min-height: 0; /* 允许收缩 */
+    }
+
+    /* 右边区域：1000px */
+    .right-section {
+      width: 1000px;
+      background: #1D1D1D;
+      border: 1px solid #444;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 右侧顶部tabs */
+    .right-tabs {
+      display: flex;
+      gap: 0;
+      width:100%
+    }
+
+    .right-tab {
+      flex: 1;
+      padding: 8px 20px;
+      background: rgba(255,255,255,0);
+      border-radius: 0;
+      cursor: pointer;
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .right-content-line{
+      width: calc(100% - 12px);
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      margin: 20px 6px 9px 6px;
+    }
+
+    .right-tab:last-child {
+      border-radius: 0 4px 4px 0;
+      border-right: none;
+    }
+
+    .right-tab.active {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    /* 右侧内容区域 */
+    .right-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background-color: #282828;
+    }
+
+    /* 电力系统区域 */
+    .electrical-power-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .electrical-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .electrical-title {
+      font-size: 16px;
+      color: rgba(255,255,255,0.8);
+      font-weight: 600;
+    }
+
+    .electrical-buttons {
+      display: flex;
+      gap: 16px;
+    }
+
+   
+    /* 发电机区域 */
+    .generator-section {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      flex: 0 0 300px;
+    }
+
+    .generator-item {
+      display: flex;
+      gap: 15px;
+      padding: 15px;
+      border-radius: 8px;
+      border: 2px dashed;
+    }
+
+    .generator-active {
+      border-color: #00ff00;
+      background: rgba(0, 255, 0, 0.05);
+    }
+
+    .generator-inactive {
+      border-color: #888;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .generator-icon {
+      width: 80px;
+      height: 80px;
+      background: #2a2a2a;
+      border-radius: 8px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .generator-active .generator-icon {
+      background: rgba(0, 255, 0, 0.1);
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    }
+
+    .generator-data {
+      flex: 1;
+    }
+
+    .generator-title {
+      width: 121px;
+      height: 19px;
+      font-family: Roboto, Roboto;
+      font-weight: 400;
+      font-size: 16px;
+      color: #6FE581;
+      text-align: left;
+      font-style: normal;
+      text-transform: none;
+      margin: 0  auto 12px auto;
+    }
+
+    .generator-params {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* 母线区域 */
+    .busbar-section {
+      flex: 1;
+      min-height: 200px;
+      /* 中间内容先放下，后续添加 */
+    }
+
+    /* 变压器区域 */
+    .transformer-section {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      flex: 0 0 300px;
+      /* 变压器内容暂时留空，后续添加 */
+    }
+
+    /* 推进系统区域 */
+    .propulsion-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .propulsion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 19px 0 40px;
+      margin: 16px 0 27px 0;
+    }
+
+    .propulsion-title {
+      font-size: 16px;
+      color: rgba(255,255,255,0.8);
+      font-weight: 600;
+    }
+
+    .propulsion-buttons {
+      display: flex;
+      gap: 16px;
+    }
+
+    .pill-button {
+      width: 155px;
+      height: 32px;
+      background: rgba(255,255,255,0);
+      border-radius: 4px 4px 4px 4px;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.8);
+      cursor: pointer;
+    }
+    
+
+    /* 推进系统组件容器 */
+    .propulsion-components {
+      display: flex;
+      padding: 0 19px;
+      overflow: hidden;
+    }
+
+    /* 连接线 */
+    .propulsion-connector {
+      width: 60px;
+      height: 20px;
+      margin-top: 100px;
+      background: rgba(255,255,255,0.2);
+      box-shadow: inset 0px 0px 12px 0px rgba(0,112,214,0.25);
+      flex-shrink: 0;
+    }
+
+    /* 推进系统组件卡片 */
+    .propulsion-component {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .component-image {
+      width: 100%;
+      height: 220px;
+      background: #2a2a2a;
+      border-radius: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 12px;
+    }
+    .component-image-1{
+      background-image: url('asserts/img/icon_3.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+    }
+    .component-image-2{
+      background-image: url('asserts/img/icon_4.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+    }
+    .component-image-3{
+      background-image: url('asserts/img/icon_5.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+    }
+    .component-image-4{
+      background-image: url('asserts/img/icon_3.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+    }
+    .component-image-5{
+      background-image: url('asserts/img/icon_4.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+    }
+    .component-image-6{
+      background-image: url('asserts/img/icon_5.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+    }
+    
+    .component-content{
+      padding-left: 30px;
+    }
+    .component-title {
+      font-size: 18px;
+      color: #fff;
+      font-weight: 500;
+      position: relative;
+      margin-bottom: 20px;
+      white-space: nowrap;
+    }
+
+    .component-title::before{
+      content: '';
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      left: -20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background-image: url('asserts/img/arrow-down.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+    }
+
+    .component-params {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      font-size: 16px;
+    }
+
+    .param-row {
+      display: flex;
+    }
+    .three-row{
+      justify-content: space-between;
+    }
+
+    .param-label {
+      color: #888;
+      width: 80px;
+      white-space: nowrap;
+    }
+    .param-value-1{
+      width: 114px;
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 5px;
+    }
+
+    .param-value {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 5px;
+      min-width: 78px;
+
+    }
+
+    .param-number {
+      color: #fff;
+      font-weight: 500;
+      width: 50px;
+    }
+
+    .param-unit {
+      color: #aaa;
+      font-weight: normal;
+      font-size: 0.9em;
+    }
+
+    .param-text {
+      color: #fff;
+      font-weight: 500;
+      width: 114px;
+    }
+
+    .param-dropdown {
+      color: #aaa;
+      font-size: 0.9em;
+      margin-left: 4px;
+    }
+
+    /* 小格子 */
+    .small-box {
+      background: #1D1D1D;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #aaa;
+      overflow: hidden;
+    }
+
+    /* GPS/时间信息盒子 */
+    .gps-time-box {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .gps-time-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 0;
+      flex: 1;
+      gap: 12px;
+    }
+
+    .gps-time-section:first-child {
+      border-bottom: 1px solid #444;
+    }
+
+    .gps-time-data {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 130px;
+      flex-shrink: 0;
+      text-align: end;
+      margin-right: 12px;
+    }
+
+    .gps-time-divider {
+      width: 1px;
+      height:24px;
+      background: rgba(255,255,255,0.3);
+      flex-shrink: 0;
+    }
+
+    .gps-coord {
+      font-size: 20px;
+      color: #fff;
+    }
+
+    .time-display {
+      font-size: 18px;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .date-display {
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .gps-time-dropdown {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #888;
+      cursor: pointer;
+      padding: 4px 8px;
+      width: 50px;
+      flex-shrink: 0;
+      justify-content: center;
+    }
+
+    .gps-time-dropdown:hover {
+      color: #aaa;
+    }
+
+    .gps-time-dropdown .dropdown-arrow {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid #888;
+      transition: border-top-color 0.2s;
+    }
+
+    .gps-time-dropdown:hover .dropdown-arrow {
+      border-top-color: #aaa;
+    }
+
+    /* 导航信息盒子 */
+    .nav-info-box {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .nav-info-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      /* gap: 12px; */
+    }
+
+    .nav-info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-info-label {
+      font-weight: 400;
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+      text-align: left;
+      font-style: normal;
+      text-transform: none;
+      white-space: nowrap;
+    }
+
+    .nav-info-value {
+      font-size: 24px;
+      color: #fff;
+      font-weight: bold;
+      white-space: nowrap;
+      line-height: 16px;
+    }
+    .nav-info-value-mb{
+      margin-bottom: 17px;
+    }
+
+    .nav-graphic-area {
+      width: 150px;
+      height: 100%;
+      background: #2a2a2a;
+      border-radius: 4px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+   
+    /* 转向模式盒子 */
+    .steering-mode-box {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .steering-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      /* border-bottom: 1px solid #444; */
+      margin-bottom: 24px;
+    }
+
+    .steering-header-title {
+      font-size: 16px;
+      color: #aaa;
+    }
+
+    .steering-header-dropdown {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      font-size: 10px;
+      color: #888;
+      cursor: pointer;
+      padding: 4px 8px;
+      font-size: 16px;
+    }
+
+    .steering-header-dropdown:hover {
+      color: #aaa;
+    }
+
+    .steering-header-dropdown .dropdown-arrow {
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid #888;
+      transition: border-top-color 0.2s;
+    }
+
+    .steering-header-dropdown:hover .dropdown-arrow {
+      border-top-color: #aaa;
+    }
+
+    .steering-main-readouts {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      flex: 1;
+    }
+
+    .steering-readout-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .steering-readout-value {
+      font-size: 32px;
+      color: #fff;
+      letter-spacing: -2px;
+      /* font-family: 'Courier New', monospace; */
+      font-weight: bold;
+      /* line-height: 1; */
+    }
+
+    .steering-readout-label {
+      font-size: 16px;
+      color: #aaa;
+    }
+
+    .steering-next-leg {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid #444;
+    }
+
+    .steering-next-leg-title {
+      font-size: 16px;
+      color: #aaa;
+    }
+
+    .steering-next-leg-data {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .steering-next-leg-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      align-items: center;
+    }
+
+    .steering-next-leg-value {
+      font-size: 18px;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .steering-next-leg-label {
+      font-size: 14px;
+      color: #aaa;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    /* 姿态信息盒子 */
+    .attitude-box {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .attitude-graphic-area {
+      flex: 1;
+      /* background: #2a2a2a; */
+      border-radius: 4px;
+      margin-bottom: 16px;
+      min-height: 148px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      .left{
+        width: 148px;
+        height: 148px;
+        background-image: url('asserts/img/icon_24.png');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 75px 24px;
+        position: relative;
+        .circle{
+          width: 24px;
+          height: 24px;
+          border: 1px solid #fff;
+          border-bottom-left-radius: 50%;
+          border-bottom-right-radius: 50%;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+        .first-line{
+          width: 50%;
+          height: 1px;
+          background-image: url('asserts/img/icon_26.png');
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: 100% 100%;
+          position: absolute;
+          top: 50%;
+        }
+        .second-line{
+          width: 50%;
+          height: 1px;
+          background-image: url('asserts/img/icon_26.png');
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: 100% 100%;
+          position: absolute;
+          top: 50%;
+          transform: rotate(-90deg);
+          transform-origin: 100% 100%;
+        }
+        &::after{
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100%;
+          height: 100%;
+          background-image: url('asserts/img/icon_25.png');
+        }
+        &::before{
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-90deg);
+          width: 100%;
+          height: 100%;
+          background-image: url('asserts/img/icon_25.png');
+        }
+      }
+      .right{
+        width: 50px;
+        height: 128px;
+        background-image: url('asserts/img/icon_27.png');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100% 100%;
+        margin: 0 0 0 -20px;
+        position: relative;
+        &::after{
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: -1px;
+          width: 20px;
+          height: 20px;
+          background-image: url('asserts/img/icon_28.png');
+          background-repeat: no-repeat;
+          background-position: center;
+        }
+
+      }
+    }
+
+    .attitude-readouts {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .attitude-readout-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .attitude-readout-value {
+      font-size: 18px;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .attitude-readout-label {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    /* 深度测量盒子 */
+    .depth-box {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .depth-chart-area {
+      flex: 1;
+      background: #2a2a2a;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      min-height: 100px;
+      position: relative;
+    }
+    
+    /* ECharts 容器 */
+    .depth-chart-container {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* 蓝色三角形指示器 */
+    .depth-indicator {
+      position: absolute;
+      right: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-right: 10px solid #4A90E2;
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .depth-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .depth-label-dropdown {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      font-size: 16px;
+      color: rgba(255,255,255,0.8);
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .depth-label-dropdown:hover {
+      color: #ccc;
+    }
+
+    .depth-label-dropdown .dropdown-arrow {
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.8);
+      transition: border-top-color 0.2s;
+    }
+
+    .depth-label-dropdown:hover .dropdown-arrow {
+      border-top-color: #ccc;
+    }
+
+    .depth-value {
+      font-size: 18px;
+      color: #fff;
+      font-weight: bold;
+      .value {
+        font-size: 18px;
+      }
+      .unit {
+        font-size: 18px;
+        color: rgba(255,255,255,0.6);
+      }
+    }
+
+    /* 报警界面盒子 */
+    .alarm-box {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .alarm-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+      justify-content: space-between;
+    }
+
+    .alarm-tab {
+      flex: 1;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 8px;
+      background: transparent;
+      color: #aaa;
+      font-size: 14px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .alarm-tab.active {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .alarm-tab:hover:not(.active) {
+      background: rgba(255,255,255,0.05);
+      color: #ccc;
+    }
+
+    .alarm-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    .alarm-item {
+      background: #2a2a2a;
+      border-radius: 4px;
+      padding: 10px 8px;
+      color: rgba(255,255,255,0.8);
+      font-size: 14px;
+    }
+
+    .alarm-content {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      gap: 7px;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .alarm-content.active {
+      display: flex;
+    }
+
+    /* Wind tab 样式 */
+    #wind-content {
+      position: relative;
+    }
+
+    .wind-panel {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wind-gauge {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .wind-gauge-circle {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      background-image: url('asserts/img/wind-gauge-bg.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
+      transform-origin: center center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* animation: wind-gauge-spin 4s linear infinite; */
+    }
+    @keyframes wind-gauge-spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .wind-compass-direction-pointer{
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      background-image: url('asserts/img/Group_3.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+    }
+    .wind-compass-direction-pointer-outer{
+      width: 0px;
+      height: 120px;
+      /* background-color: #0066cc; */
+      position: relative;
+      /* animation: wind-gauge-spin 8s linear infinite; */
+      &::before{
+        content: 'N';
+        position: absolute;
+        top: -20px;
+        left: -3px;
+        z-index: 10000;
+      }
+      &::after{
+        content: '';
+        background-image: url('asserts/img/icon_2.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;  
+        width: 31px;
+        height: 31px;
+        position: absolute;
+        top: -31px;
+        left: -14px;
+      }
+    }
+    /* 外圈蓝色弧线 - 1/8圆弧（45度） */
+    .wind-gauge-circle::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      /* 使用conic-gradient创建45度的蓝色扇形 */
+      background: conic-gradient(
+        from 0deg,
+        #0096ff 0deg 45deg,
+        transparent 45deg 360deg
+      );
+      /* 使用mask创建圆环效果（只显示外圈部分） */
+      mask: radial-gradient(
+        circle at center,
+        transparent 56px,
+        black 0x,
+        black 60px,
+        transparent 60px
+      );
+      -webkit-mask: radial-gradient(
+        circle at center,
+        transparent 56px,
+        black 0px,
+        black 60px,
+        transparent 60px
+      );
+      z-index: 9999;
+      /* 旋转动画，让圆弧沿着圆环边缘旋转 */
+      animation: wind-arc-rotate 8s linear infinite;
+      transform-origin: center center;
+    }
+    
+    @keyframes wind-arc-rotate {
+      from {
+        transform: translate(-50%, -50%) rotate(0deg);
+      }
+      to {
+        transform: translate(-50%, -50%) rotate(360deg);
+      }
+    }
+    
+    /* 旋转的图标容器 - 参考 compass-direction-ring 的写法 */
+    .wind-direction-ring {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      width: 0px;
+      height: 60px;
+      background-color: transparent;
+      z-index: 10000;
+      transform-origin: 50% 100%;
+      animation: wind-icon-rotate 8s linear infinite;
+    }
+    
+    @keyframes wind-icon-rotate {
+      from {
+        transform: translate(-50%, 0) rotate(0deg);
+      }
+      to {
+        transform: translate(-50%, 0) rotate(360deg);
+      }
+    }
+    
+    /* 在旋转容器上放置 direction.svg 图标 - 参考 compass-direction-ring::before 的写法 */
+    .wind-direction-ring::before {
+      content: '';
+      background-image: url('asserts/img/direction.svg');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+      width: 25px;
+      height: 28px;
+      position: absolute;
+      top: -11px;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .wind-info {
+      position: absolute;
+      z-index: 10001;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 4px;
+      bottom: 0;
+    }
+
+    .wind-info-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .wind-value {
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: -1px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .wind-label {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      font-size: 16px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .wind-label .unit {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .wind-info-block--right {
+      text-align: right;
+      align-items: flex-end;
+    }
+    
+    /* Forecast 内容区域 - 三列布局 */
+    #forecast-content {
+      display: none;
+      flex-direction: row;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    
+    #forecast-content.active {
+      display: flex;
+    }
+    
+    /* 单天天气预报卡片 */
+    .forecast-day {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    
+    .forecast-day-name {
+      font-size: 16px;
+      color: #fff;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    
+    .forecast-day-date {
+      font-size: 12px;
+      color: #aaa;
+      white-space: nowrap;
+    }
+    
+    .forecast-icon {
+      width: 70px;
+      height: 70px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 4px 0;
+      /* 暂时用占位符，图片后续添加 */
+    }
+    
+    .forecast-temp {
+      font-size: 14px;
+      color: #fff;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    
+    .forecast-condition {
+      font-size: 14px;
+      color: #fff;
+      white-space: nowrap;
+    }
+    
+    /* Weather 内容区域 - 上下两部分布局 */
+    #weather-content {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      overflow: hidden;
+    }
+    
+    #weather-content.active {
+      display: flex;
+    }
+    
+    /* Weather 上半部分：图标和参数 */
+    .weather-main {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    
+    /* 左侧天气图标 */
+    .weather-icon-large {
+      width: 90px;
+      height: 90px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      /* 天气图标占位符，图片后续添加 */
+    }
+    
+    /* 右侧参数列表 */
+    .weather-params {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding-top: 4px;
+    }
+    
+    .weather-param-item {
+      display: flex;
+      align-items: center;
+    }
+    
+    .weather-param-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      /* 参数图标占位符 */
+    }
+    
+    .weather-param-label {
+      font-size: 16px;
+      color: #aaa;
+      margin-left: 5px;
+    }
+    
+    .weather-param-value {
+      font-size: 14px;
+      color: #fff;
+      font-weight: bold;
+      margin-left: auto;
+    }
+    
+    /* Weather 下半部分：风向和位置信息 */
+    .weather-details {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .weather-detail-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .weather-detail-value {
+      font-size: 16px;
+      color: #fff;
+      font-weight: bold;
+      /* 固定高度 + 底对齐，保证三个值在同一水平线 */
+      min-height: 24px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      line-height: 1;
+    }
+    
+    .weather-detail-label {
+      font-size: 16px;
+      color: #aaa;
+    }
+    .nav-info-2-title {
+      margin-bottom: 10px;
+      font-weight: 400;
+      font-size: 16px;
+      color: rgba(255,255,255,0.8);
+      text-align: left;
+      font-style: normal;
+      text-transform: none;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 中心圆 */
+    .center {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: transparent;
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+    .center::after{
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 85px;
+      left: 50%;
+      top: 255%;
+      transform: translate(-50%, -50%);
+      background-image: url('asserts/img/jddz.png');
+      background-repeat: no-repeat;
+      background-size: 100%;
+    }
+
+    /* 整个旋转组 */
+    .rotate-box {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      animation: spin 50s linear infinite;
+    }
+
+    /* 竖线 */
+    .line {
+      position: absolute;
+      width: 7px;
+      height: 47px;
+      left: 50%;
+      top: 44px;
+      transform: translateX(-50%);
+      background: #AEAEAE;
+    }
+
+    /* 箭头头 */
+    .arrow {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-left: 6px solid #AEAEAE;
+      border-top: 6px solid #AEAEAE;
+
+      /* 箭头方向 */
+      transform: rotate(45deg);
+
+      left: 50%;
+      top: 44px;
+      transform-origin: center;
+      margin-left: -14px;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+
+    .electrical-main-content {
+      display: flex;
+
+      .Busbar-left{
+        width: 408px;
+        .Generato-wrapper{
+          position: relative;
+          margin: 0 auto;
+          width: 160px;
+          cursor: pointer;
+        }
+        .Generato{
+          width: 160px;
+          height: 160px;
+          background-image: url(asserts/img/icon_9.png);
+          background-size: 100% 100%;
+          background-repeat: no-repeat;
+          background-position: center;
+        }
+        /* 悬停数据面板 */
+        .generator-data-panel{
+          position: absolute;
+          left: 175px;
+          top: 0;
+          width: 174px;
+          background: #2a2a2a;
+          /* border: 1px solid rgba(111, 229, 129, 0.3); */
+          border-radius: 6px;
+          padding: 10px 14px;
+          z-index: 1000;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.2s ease, visibility 0.2s ease;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        }
+        .Generato-wrapper .generator-data-panel{
+          opacity: 1;
+          visibility: visible;
+        }
+        .data-param-row{
+          margin-bottom: 10px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          flex-direction: column;
+        }
+        .data-param-label{
+          margin-bottom: 5px;
+          font-size: 16px;
+          color: rgba(255, 255, 255, 0.8);
+          font-weight: 400;
+          font-family: 'Roboto', sans-serif;
+        }
+        .data-param-value{
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+        }
+        .data-param-number{
+          font-size: 18px;
+          color: #fff;
+          font-weight: 500;
+          font-family: 'Roboto', sans-serif;
+        }
+        .data-param-unit{
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.7);
+          font-family: 'Roboto', sans-serif;
+        }
+        .Generato-Busbar-line{
+          width: 19px;
+          height: 127px;
+          background-image: url(asserts/img/icon_10.png);
+          background-size: 100% 100%;
+          background-repeat: no-repeat;
+          background-position: center;
+          margin: 0 auto;
+          position: relative;
+          margin-bottom: 30px;
+          right:4px;
+          &::after{ 
+            content: '';
+            width: 4px;
+            height: 48px;
+            position: absolute;
+            bottom: 10px;
+            left: 15px;
+            background-color: #1F9D33;
+            transform-origin: bottom;
+            transform: rotate(180deg)
+          }
+        }
+        .Busbar{
+          width: 100%;
+          height: 170px;
+          background-image: url(asserts/img/icon_6.png);
+          background-size: 100% 100%;
+          background-repeat: no-repeat;
+          background-position: center;
+          margin-bottom: 30px;
+          position: relative;
+          z-index: 100;
+          .Busbar-value{
+            position: absolute;
+            width: 154px;
+            height: 37px;
+            border-radius: 4px;
+            border: 1px solid #383838;
+            bottom: 5px;
+            left: 139px;
+            background: #2a2a2a;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 8px;
+            .busbar-arrow{
+              color: #666;
+              font-size: 12px;
+              cursor: pointer;
+            }
+            .busbar-label{
+              font-size: 13px;
+              color: rgba(255, 255, 255, 0.8);
+              font-family: 'Roboto', sans-serif;
+              font-weight: 400;
+            }
+            .busbar-number-box{
+              background: #1a4d2e;
+              border-radius: 4px;
+              padding: 4px 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-width: 40px;
+            }
+            .busbar-number{
+              font-size: 14px;
+              color: #fff;
+              font-weight: 500;
+              font-family: 'Roboto', sans-serif;
+            }
+            .busbar-unit{
+              font-size: 13px;
+              color: rgba(255, 255, 255, 0.8);
+              font-family: 'Roboto', sans-serif;
+              font-weight: 400;
+            }
+          }
+          .Busbar-value-2{
+            left: 370px;
+          }
+        }
+        .Transformer-line{
+          width: 100%;
+          display: flex;
+          .Transformer-line-1{
+            width: 17px;
+            height: 64px;
+            background-image:  url(asserts/img/icon_13.png);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin: 0px 214px 0 85px;
+            position: relative;
+            &::after{
+              content: '';
+              width: 4px;
+              height: 48px;
+              position: absolute;
+              bottom: 56px;
+              left: 13px;
+              background-color: #1F9D33;
+              transform-origin: top;
+              transform: rotate(0deg)
+            }
+          }
+          .Transformer-line-2{
+            width: 17px;
+            height: 64px;
+            background-image:  url(asserts/img/icon_13.png);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            position: relative;
+            &::after{
+              content: '';
+              width: 4px;
+              height: 48px;
+              position: absolute;
+              bottom: 56px;
+              left: 13px;
+              background-color: #1F9D33;
+              transform-origin: top;
+              transform: rotate(0deg)
+            }
+          }
+        }
+        .Transformer{
+          display: flex;
+          .Transformer-1{
+            min-width: 160px;
+            min-height: 160px;
+            background-image:  url(asserts/img/icon_12.png);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin: 0 72px 0 13px;
+          }
+          .Transformer-2{
+            min-width: 160px;
+            min-height: 160px;
+            background-image:  url(asserts/img/icon_12.png);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+          }
+        }
+        .discreption{
+          margin-top: 16px;
+          display: flex;
+          justify-content:space-between;
+          .des-1{ 
+            font-family: Roboto, Roboto;
+            font-weight: 400;
+            font-size: 16px;
+            color: #6FE581;
+            text-align: center;
+            font-style: normal;
+            text-transform: none;
+            margin-left: 13px;
+          }
+          .des-2{ 
+            font-family: Roboto, Roboto;
+            font-weight: 400;
+            font-size: 16px;
+            color: #6FE581;
+            text-align: center;
+            font-style: normal;
+            text-transform: none;
+          }
+        }
+      }
+      .Busbar-line{
+        width: 56px;
+        height: 100%;
+        position: relative;
+        z-index: 100;
+        z-index: 1;
+        &::after{
+          content: '';
+          width: 72px;
+          height: 5px;
+          top: 56%;
+          left: -17%;
+          transform-origin: 0 0;
+          transform:rotate(-30deg);
+          /* background-image: url(asserts/img/icon_8.png); */
+          background-color: #383838;
+          position: absolute;
+        }
+      }
+      .Busbar-right{
+        width: 408px;
+        .generator-title{
+          color: rgba(255,255,255,0.8);
+        }
+        .Generato-wrapper{
+          position: relative;
+          margin: 0 auto;
+          width: 160px;
+          cursor: pointer;
+        }
+        .Generato{
+          min-width: 160px;
+          min-height: 160px;
+          background-image: url(asserts/img/icon_14.png);
+          background-size: 100% 100%;
+          background-repeat: no-repeat;
+          background-position: center;
+        }
+        /* 悬停数据面板 */
+        .generator-data-panel{
+          position: absolute;
+          left: 175px;
+          top: 0;
+          width: 174px;
+          background: #2a2a2a;
+          /* border: 1px solid rgba(111, 229, 129, 0.3); */
+          border-radius: 6px;
+          padding: 10px 14px;
+          z-index: 1000;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.2s ease, visibility 0.2s ease;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        }
+        .Generato-wrapper .generator-data-panel{
+          opacity: 1;
+          visibility: visible;
+        }
+        .data-param-row{
+          margin-bottom: 10px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          flex-direction: column;
+        }
+        .data-param-row:first-child{
+          padding-top: 0;
+        }
+        .data-param-label{
+          margin-bottom: 5px;
+          font-size: 16px;
+          color: rgba(255, 255, 255, 0.8);
+          font-weight: 400;
+          font-family: 'Roboto', sans-serif;
+        }
+        .data-param-value{
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+        }
+        .data-param-number{
+          font-size: 18px;
+          color: #fff;
+          font-weight: 500;
+          font-family: 'Roboto', sans-serif;
+        }
+        .data-param-unit{
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.6);
+          font-family: 'Roboto', sans-serif;
+        }
+        .Generato-Busbar-line{
+          width: 19px;
+          height: 127px;
+          background-image: url(asserts/img/icon_15.png);
+          background-size: 100% 100%;
+          background-repeat: no-repeat;
+          background-position: center;
+          margin: 0 auto;
+          position: relative;
+          margin-bottom: 30px;
+          right:-3px;
+          &::after{ 
+            content: '';
+            width: 4px;
+            height: 48px;
+            position: absolute;
+            bottom: 10px;
+            left: 15px;
+            background-color: #383838;
+            transform-origin: bottom;
+            transform: rotate(180deg)
+          }
+        }
+        .Busbar{
+          width: 100%;
+          height: 170px;
+          background-image: url(asserts/img/icon_7.png);
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          margin-bottom: 30px;
+          position: relative;
+          z-index: 100;
+          .Busbar-value{
+            position: absolute;
+            width: 154px;
+            height: 37px;
+            border-radius: 4px;
+            border: 1px solid #383838;
+            bottom: 5px;
+            left: 139px;
+            background: #2a2a2a;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 8px;
+            .busbar-arrow{
+              color: #666;
+              font-size: 12px;
+              cursor: pointer;
+            }
+            .busbar-label{
+              font-size: 13px;
+              color: rgba(255, 255, 255, 0.8);
+              font-family: 'Roboto', sans-serif;
+              font-weight: 400;
+            }
+            .busbar-number-box{
+              background: #1a4d2e;
+              border-radius: 4px;
+              padding: 4px 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-width: 40px;
+            }
+            .busbar-number{
+              font-size: 14px;
+              color: #fff;
+              font-weight: 500;
+              font-family: 'Roboto', sans-serif;
+            }
+            .busbar-unit{
+              font-size: 13px;
+              color: rgba(255, 255, 255, 0.8);
+              font-family: 'Roboto', sans-serif;
+              font-weight: 400;
+            }
+          }
+          .Busbar-value-2{
+              left: 340px;
+            }
+        }
+        .Transformer-line{
+          width: 100%;
+          display: flex;
+          .Transformer-line-1{
+            width: 17px;
+            height: 64px;
+            background-image:  url(asserts/img/icon_16.png);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin: 0px 212px 0 86px;
+            position: relative;
+            &::after{
+              content: '';
+              width: 4px;
+              height: 48px;
+              position: absolute;
+              bottom: 56px;
+              left: 12px;
+              background-color: #383838;
+              transform-origin: top;
+              transform: rotate(0deg)
+            }
+          }
+          .Transformer-line-2{
+            width: 17px;
+            height: 64px;
+            background-image:  url(asserts/img/icon_16.png);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            position: relative;
+            &::after{
+              content: '';
+              width: 4px;
+              height: 48px;
+              position: absolute;
+              bottom: 56px;
+              left: 12px;
+              background-color: #383838;
+              transform-origin: top;
+              transform: rotate(0deg)
+            }
+          }
+        }
+        .Transformer{
+          display: flex;
+          .Transformer-1{
+            min-width: 160px;
+            min-height: 160px;
+            background-image:  url(asserts/img/icon_17.png);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin: 0 72px 0 13px;
+          }
+          .Transformer-2{
+            min-width: 160px;
+            min-height: 160px;
+            background-image:  url(asserts/img/icon_17.png);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+          }
+        }
+        .discreption{
+          margin-top: 16px;
+          display: flex;
+          justify-content:space-between;
+          .des-1{ 
+            font-family: Roboto, Roboto;
+            font-weight: 400;
+            font-size: 16px;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            font-style: normal;
+            text-transform: none;
+            margin-left: 13px;
+          }
+          .des-2{ 
+            font-family: Roboto, Roboto;
+            font-weight: 400;
+            font-size: 16px;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            font-style: normal;
+            text-transform: none;
+          }
+        }
+      }
+    }
+
+    .nav-header{
+    display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .nav-info-box-1-left{
+          font-size: 16px;
+          color: #fff;
+          font-weight: 600;
+        }
+        .nav-kuai{
+          width: 24px;
+          height: 24px;
+          background: #3B3B3B;
+          border-radius: 4px 4px 4px 4px; 
+    }
+    .navigation-information{
+      overflow: hidden;
+      padding: 16px 34px;
+      .nav-info-box-1{
+        
+        .nav-content{
+          margin-top: 16px;
+        }
+      }
+      .nav-info-box-2{
+        margin-top: 27px;
+        display: flex;
+        justify-content: space-between;
+        gap: 40px;
+        .nav-header{
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .nav-info-box-2-left{
+          font-size: 16px;
+          color: #fff;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+        .nav-kuai{
+          width: 24px;
+          height: 24px;
+          background: #3B3B3B;
+          border-radius: 4px 4px 4px 4px; 
+        }
+        .left, .right{
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+      }
+      .nav-info-box-line{
+        position: relative;
+        left: -26px;
+        width: 980px;
+        border: 1px solid rgba(255,255,255,0.1);
+        margin-top: 37px
+      }
+    }
+
+    /* BOW THRUSTER 控制界面 */
+    .bow-thruster-display {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    .bow-thruster-values {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 80px;
+    }
+
+    .value-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: space-between;
+    }
+    .border-bottom{
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom:5px;
+    }
+
+    .value-triangle {
+      color: #fff;
+      font-size: 10px;
+      display: inline-block;
+      line-height: 1;
+      margin-right: 4px;
+    }
+
+    .value-main {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .bow-thruster-slider{
+      width: 215px;
+      height: 51px;
+    
+        .thruster-rotating-icon {
+          width: 51px; 
+          height: 215px;
+          background-image: url(asserts/img/icon_19.png);
+          background-repeat: no-repeat;
+          background-size: 100% 100%;
+          z-index: 1;
+          position: relative;
+          transform: rotate(-90deg);
+          transform-origin: left top;
+          margin-top: 51px;
+          &::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: -7px;
+            transform: rotate(90deg);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #007BFF; /* 蓝色等腰三角形 */
+          }
+          &::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            right: -7px;
+            transform: rotate(-90deg);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #007BFF; /* 蓝色等腰三角形 */
+          }
+        }
+    }
+
+    /* THRUSTER 和 RUDDER 控制界面 */
+    .thruster-rudder-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    .thruster-rudder-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .thruster-rudder-box {
+      position: relative;
+      padding-top: 16px;
+      min-height: 200px;
+    }
+
+    .thruster-rudder-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .thruster-rudder-title {
+      font-size: 16px;
+      color: #fff;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .thruster-rudder-content {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .thruster-values {
+      min-width: 100px;
+    }
+
+    .thruster-value-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* 垂直条形图 */
+    .thruster-bar-chart {
+      height: 200px;
+      display: flex;
+        .thruster-rotating-icon {
+          margin-right: 20px;
+          width: 48px; 
+          height: 200px;
+          background-image: url(asserts/img/icon_19.png);
+          background-repeat: no-repeat;
+          background-size: 100% 100%;
+          z-index: 1;
+          position: relative;
+          &::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: -7px;
+            transform: rotate(90deg);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #007BFF; /* 蓝色等腰三角形 */
+          }
+          &::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            right: -7px;
+            transform: rotate(-90deg);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #007BFF; /* 蓝色等腰三角形 */
+          }
+        }
+        .thruster-line{
+          width: 24px;
+          height: 200px;
+          background-image: url(asserts/img/icon_20.png);
+          background-repeat: no-repeat;
+          background-size: 100% 100%;
+          position: relative;
+          &::after {
+            content: '';
+            position: absolute;
+            top: 106px;
+            left: 0px;
+            transform: rotate(90deg);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 18px solid #007BFF; /* 蓝色等腰三角形 */
+          }
+          &::before {
+            content: '';
+            position: absolute;
+            top: 47px;
+            right: -16px;
+            transform: rotate(-90deg);
+            width: 0;
+            height: 0;
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-bottom: 13px solid #007BFF; /* 蓝色等腰三角形 */
+          }
+        }
+    }
+
+    /* RUDDER 控制 */
+    .rudder-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rudder-gauge {
+      width: 170px;
+      height: 85px;
+      overflow: hidden;
+      position: relative;
+      margin-top: 19px;
+      .img{
+        width: 170px;
+        margin-top: -38px;
+      }
+      /* 横向居中  */
+      .sanxing-icon{
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(0deg);
+        background-color: #0066cc;
+        width: 0px;
+        height: 84px;
+        transform-origin: top;
+
+         &::before {
+          content: '';
+          position: absolute;
+          bottom: 5px;
+          left: -22px;
+          width: 46px;
+          height: 37px;
+          background-image: url(asserts/img/icon_22.png);
+          background-repeat: no-repeat;
+          background-size: 100% 100%;
+          z-index: 1;
+          transform: rotate(179deg);
+        }
+      }
+     
+    }
+
+    .rudder-values {
+      display: flex;
+      gap: 4px;
+      min-width: 100px;
+      align-items: center;
+      padding: 6px 0;
+    }
+
+    /* AZIMUTH 控制界面 */
+    .azimuth-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 16px 32px;
+    }
+
+    .azimuth-values {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-width: 100px;
+    }
+
+    .azimuth-value-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px 0;
+    }
+
+    .value-secondary {
+      color: #aaa;
+      font-size: 16px;
+      font-weight: 400;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .value-label {
+      font-size: 16px;
+      font-weight: 500;
+      margin-top: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .label-text {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 400;
+    }
+
+    .label-unit {
+      color: #aaa;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    /* 圆形控制 */
+    .azimuth-circle {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 220px;
+      height: 220px;
+      position: relative;
+    }
+
+    .circle-outer {
+      width: 200px;
+      height: 200px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .circle-ring {
+      width: 100%;
+      height: 100%;
+      background-image:  url(asserts/img/icon_18.png);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      position: relative;
+      &::after{
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        border-left: 15px solid transparent;
+        border-right: 15px solid transparent;
+        border-bottom: 25px solid #007BFF; /* 蓝色三角形 */
+        animation: orbitRotate 4s linear infinite;
+        transform-origin: 100px 100px;
+          transform: rotate(35deg);
+      }
+      
+    }
+    @keyframes orbitRotate {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+    .rotating-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 38px; /* 调整大小以适应设计 */
+      height: 128px; /* 调整大小以适应设计 */
+      background-image: url(asserts/img/icon_19.png);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      transform: translate(-50%, -50%);
+      /* animation: zirotate360 4s linear infinite; */
+      z-index: 1;
+      &::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: -7px;
+        transform: rotate(90deg);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid #007BFF; /* 蓝色等腰三角形 */
+      }
+      &::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        right: -7px;
+        transform: rotate(-90deg);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid #007BFF; /* 蓝色等腰三角形 */
+      }
+    }
+    
+    
+    .rotating-icon-top {
+      position: absolute;
+      top: -5px;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 0;
+      height: 0;
+      border-left: 11px solid transparent;
+      border-right: 11px solid transparent;
+      border-bottom: 6px solid white; /* 白色等腰三角形 */
+      z-index: 2;
+    }
+    
+    @keyframes zirotate360 {
+      from {
+        transform: translate(-50%, -50%) rotate(0deg);
+      }
+      to {
+        transform: translate(-50%, -50%) rotate(360deg);
+      }
+    }
+
+    .Angle{
+      margin: 0;
+      .Angle-text{
+        margin-top: -10px;
+        margin-left: 10px;
+      }
+    }
+
+    /* 全局滚动条样式（暗色细滚动条） */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #222;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #777;
+    }
+
+    /* Monitoring Curve 抽屉样式 */
+    .monitoring-drawer .el-drawer__body {
+      padding: 20px 24px;
+      background: #222;
+      color: #fff;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* 禁止抽屉整体滚动 */
+    }
+
+    .monitoring-drawer-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0; /* 允许内部子元素滚动 */
+    }
+
+    .monitoring-drawer-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 50px;
+    }
+
+    .monitoring-drawer-close-icon {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .monitoring-drawer-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      flex: 1;
+    }
+
+    .alarm-drawer-table {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0; /* 允许内部滚动 */
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .alarm-table-header {
+      display: flex;
+      align-items: center;
+      height: 46px;
+      background: #4a4a4a;
+      color: #ddd;
+      font-size: 12px;
+      flex-shrink: 0;
+      padding: 0 12px;
+    }
+
+    .alarm-table-body {
+      flex: 1;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .alarm-row {
+      display: flex;
+      align-items: center;
+      height: 48px;
+      border-radius: 6px;
+      color: #cfcfcf;
+      font-size: 12px;
+      padding: 0 6px;
+    }
+
+    .alarm-row:nth-child(even) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .alarm-cell {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 10px;
+      box-sizing: border-box;
+    }
+
+    .alarm-cell-time { width: 160px; }
+    .alarm-cell-id { width: 70px; }
+    .alarm-cell-desc { flex: 1; min-width: 240px; }
+    .alarm-cell-unit { width: 80px; text-align: left; }
+    .alarm-cell-threshold { width: 110px; text-align: left; }
+    .alarm-cell-measured { width: 120px; text-align: right; padding-right: 0; }
+
+    .monitoring-chart-card {
+      flex: 0 0 calc(50% - 10px);
+      width: calc(50% - 10px);
+      height: 452px; /* 每个图表卡片固定高度 */
+      min-width: 0;
+      /* background: #1a1a1a; */
+      box-sizing: border-box;
+    }
+
+    .monitoring-chart-title {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .monitoring-chart {
+      width: 100%;
+      height: calc(100% - 32px); /* 卡片高度减去标题和内边距，接近 452 */
+    }
+  </style>
+  <!-- ECharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap"> -->
+  <script src="autofit-responsive.js"></script>
+  <!-- 先加载 Vue，再加载 Element-UI JS -->
+  <script src="vue.min.js"></script>
+  <script src="element-ui/lib/index.js"></script>
+  <!-- UapiClient 使用ES6模块方式加载 -->
+  <script type="module">
+    import { UapiClient } from 'https://cdn.jsdelivr.net/npm/uapi-browser-sdk@latest/dist/index.js';
+    // 将UapiClient挂载到window对象，以便Vue可以使用
+    window.UapiClient = UapiClient;
+  </script>
+</head>
+<body>
+  <div id="app" class="autofit-container">
+  <!-- 顶部header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="menu-icon"></div>
+      <div class="logo"></div>
+    </div>
+  </div>
+
+  <!-- 主内容区域：左右分布 -->
+  <div class="content">
+    <!-- 左边：890px -->
+    <div class="left-section">
+      <!-- 左边上半部分：500px -->
+      <div class="left-top">
+        <!-- 左侧数据列 -->
+        <div class="data-column-left">
+          <div class="data-readout data-readout-hdg">
+            <div class="data-value">000°</div>
+            <div class="data-label">
+              <span class="label-main">HDG</span>
+              <span class="label-unit">/min</span>
+            </div>
+            <div class="data-source" @click.stop="toggleSourceDropdown('hdg')">
+              <span>{{ selectedSources.hdg }}</span>
+              <div class="dropdown-arrow"></div>
+              <div class="data-source-menu" v-show="openSourceKey === 'hdg'" @click.stop>
+                <div
+                  class="data-source-menu-item"
+                  v-for="opt in sourceOptions"
+                  :key="'hdg-' + opt"
+                  :class="{ active: selectedSources.hdg === opt }"
+                  @click="selectSource('hdg', opt)">
+                  {{ opt }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="data-readout data-readout-cog">
+            <div class="data-value">000°</div>
+            <div class="data-label">
+              <span class="label-main">COG</span>
+              <span class="label-unit">/min</span>
+            </div>
+            <div class="data-source" @click.stop="toggleSourceDropdown('cog')">
+              <span>{{ selectedSources.cog }}</span>
+              <div class="dropdown-arrow"></div>
+              <div class="data-source-menu" v-show="openSourceKey === 'cog'" @click.stop>
+                <div
+                  class="data-source-menu-item"
+                  v-for="opt in sourceOptions"
+                  :key="'cog-' + opt"
+                  :class="{ active: selectedSources.cog === opt }"
+                  @click="selectSource('cog', opt)">
+                  {{ opt }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="data-readout data-readout-rot">
+            <div class="data-value">124°</div>
+            <div class="data-label">
+              <span class="label-main">ROT</span>
+              <span class="label-unit">/min</span>
+            </div>
+            <div class="data-source" @click.stop="toggleSourceDropdown('rot')">
+              <span>{{ selectedSources.rot }}</span>
+              <div class="dropdown-arrow"></div>
+              <div class="data-source-menu" v-show="openSourceKey === 'rot'" @click.stop>
+                <div
+                  class="data-source-menu-item"
+                  v-for="opt in sourceOptions"
+                  :key="'rot-' + opt"
+                  :class="{ active: selectedSources.rot === opt }"
+                  @click="selectSource('rot', opt)">
+                  {{ opt }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 中央罗盘区域 -->
+        <div class="compass-container">
+          <div class="compass-outer-ring">
+
+            <div class="compass-direction-ring"></div>
+            <div class="compass-direction-2"></div>
+
+            <!-- 外圈刻度 -->
+            <img src="asserts/img/Group_42.png" alt="compass scale" class="compass-scale">
+            
+            <!-- 方向标记 -->
+            <div class="compass-direction n">N</div>
+            <div class="compass-direction ne">NE</div>
+            <div class="compass-direction e">E</div>
+            <div class="compass-direction se">SE</div>
+            <div class="compass-direction s">S</div>
+            <div class="compass-direction sw">SW</div>
+            <div class="compass-direction w">W</div>
+            <div class="compass-direction nw">NW</div>
+
+            <!-- 蓝色箭头（主要方向） -->
+            <div class="compass-blue-arrow">
+              <img src="asserts/img/Group_10.png" alt="blue arrow">
+            </div>
+
+            <!-- 灰色箭头 -->
+            <div class="compass-gray-arrow"></div>
+
+            <!-- 底部指向图标 -->
+            <div class="compass-bottom-pointer">
+              <img src="asserts/img/Group_3.png" alt="bottom pointer">
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧数据列 -->
+        <div class="data-column-right">
+          <div class="data-readout data-readout-wind">
+            <div class="data-value">12.5</div>
+            <div class="data-label">
+              <span class="label-main">Wind</span>
+              <span class="label-unit"> kn</span>
+            </div>
+            <div class="line-right"></div>
+            <div class="data-source" @click.stop="toggleSourceDropdown('wind')">
+              <span>{{ selectedSources.wind }}</span>
+              <div class="dropdown-arrow"></div>
+              <div class="data-source-menu" v-show="openSourceKey === 'wind'" @click.stop>
+                <div
+                  class="data-source-menu-item"
+                  v-for="opt in sourceOptions"
+                  :key="'wind-' + opt"
+                  :class="{ active: selectedSources.wind === opt }"
+                  @click="selectSource('wind', opt)">
+                  {{ opt }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="data-readout data-readout-current">
+            <div class="data-value">12.5</div>
+            <div class="data-label">
+              <span class="label-main">Current</span>
+              <span class="label-unit"> kn</span>
+            </div>
+            <div class="line-right"></div>
+            <div class="data-source" @click.stop="toggleSourceDropdown('current')">
+              <span>{{ selectedSources.current }}</span>
+              <div class="dropdown-arrow"></div>
+              <div class="data-source-menu" v-show="openSourceKey === 'current'" @click.stop>
+                <div
+                  class="data-source-menu-item"
+                  v-for="opt in sourceOptions"
+                  :key="'current-' + opt"
+                  :class="{ active: selectedSources.current === opt }"
+                  @click="selectSource('current', opt)">
+                  {{ opt }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 左边下半部分：6个小格子（3列x2行） -->
+      <div class="left-bottom">
+        <div class="small-box">
+          <div class="gps-time-box">
+            <!-- 上半部分：GPS坐标 -->
+            <div class="gps-time-section">
+              <div class="gps-time-data">
+                <div class="gps-coord"> {{toDMS(myloc.mylat,"lat")}} </div>
+                <div class="gps-coord"> {{toDMS(myloc.mylon,"lon")}} </div> 
+                 <!-- 41°03.441'N
+                071°16.676W -->
+              </div>
+              <div class="gps-time-divider"></div>
+              <div class="gps-time-dropdown">
+                GPS1
+                <div class="dropdown-arrow"></div>
+              </div>
+            </div>
+            <!-- 下半部分：时间和日期 -->
+            <div class="gps-time-section">
+              <div class="gps-time-data">
+                <div class="time-display">14:34:32</div>
+                <div class="date-display">12-08-2026</div>
+              </div>
+              <div class="gps-time-divider"></div>
+              <div class="gps-time-dropdown">
+                UTC1
+                <div class="dropdown-arrow"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="small-box">
+          <div class="nav-info-box">
+            <div class="nav-info-left">
+              <div class="nav-info-item">
+                <div class="nav-info-2-title">Next leg</div>
+                <div class="nav-info-value  nav-info-value-mb">000°</div>
+              </div>
+              <div class="nav-info-item">
+                <div class="nav-info-label">Course</div>
+                <div class="nav-info-value">0.9</div>
+                <div class="nav-info-label nav-info-value-mb">Dist to WOL NM</div>
+              </div>
+              <div class="nav-info-item">
+                <div class="nav-info-value">0:0:12</div>
+                <div class="nav-info-label">Time to WOL</div>
+              </div>
+            </div>
+            <!-- 风向标 这里 切图 没有切好,动画不好做,  直接改用的css 来做的-->
+            <div class="nav-graphic-area">
+              <div class="container">
+                <div class="center"></div>
+                <div class="rotate-box">
+                  <div class="arrow"></div>
+                  <div class="line"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="small-box">
+          <div class="steering-mode-box">
+            <!-- 顶部：Steering mode 和 Track下拉 -->
+            <div class="steering-header">
+              <div class="steering-header-title">Steering mode</div>
+              <div class="steering-header-dropdown">
+                Track
+                <div class="dropdown-arrow"></div>
+              </div>
+            </div>
+            <!-- 中间：三个大的数值显示 -->
+            <div class="steering-main-readouts">
+              <div class="steering-readout-item">
+                <div class="steering-readout-value">010°</div>
+                <div class="steering-readout-label">Course</div>
+              </div>
+              <div class="steering-readout-item">
+                <div class="steering-readout-value">010°</div>
+                <div class="steering-readout-label">ROT /min</div>
+              </div>
+              <div class="steering-readout-item">
+                <div class="steering-readout-value">010°</div>
+                <div class="steering-readout-label">Radius</div>
+              </div>
+            </div>
+            <!-- 底部：Next leg信息 -->
+            <div class="steering-next-leg">
+              <div class="steering-next-leg-title">Next leg</div>
+              <div class="steering-next-leg-data">
+                <div class="steering-next-leg-item">
+                  <div class="steering-next-leg-value">000</div>
+                  <div class="steering-next-leg-label">Course</div>
+                </div>
+                <div class="steering-next-leg-item">
+                  <div class="steering-next-leg-value">0.9</div>
+                  <div class="steering-next-leg-label">DST WOL NW</div>
+                </div>
+                <div class="steering-next-leg-item">
+                  <div class="steering-next-leg-value">0:0:12</div>
+                  <div class="steering-next-leg-label">Time to WOL</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="small-box">
+          <div class="attitude-box">
+            <!-- 上方图形区域（先留空） -->
+            <div class="attitude-graphic-area">
+              <div class="left">
+                <div class="circle"></div>
+                <div class="first-line"></div>
+                <div class="second-line"></div>
+              </div>
+              <div class="right"></div>
+            </div>
+            <!-- 底部读数 -->
+            <div class="attitude-readouts">
+              <div class="attitude-readout-item" style="text-align: start;">
+                <div class="attitude-readout-value">{{this.myloc.Pitch}}°</div> 
+                                  <!-- this.myloc.Pitch = imuData.Pitch;
+									this.myloc.Roll = imuData.Roll;
+                  this.myloc.Heave = imuData.Heave; -->
+                <div class="attitude-readout-label">Pitch</div>
+              </div>
+              <div class="attitude-readout-item" style="text-align: center;">
+                <div class="attitude-readout-value">0.9°</div>
+                <div class="attitude-readout-label">Roll</div>
+              </div>
+              <div class="attitude-readout-item">
+                <div class="attitude-readout-value" style="text-align: end;">0.02°</div>
+                <div class="attitude-readout-label" >
+                    <span class="attitude-readout-label-main">Heave</span>
+                    <span class="attitude-readout-label-unit">m/s2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="small-box">
+          <div class="depth-box">
+            <!-- 上方图表区域 -->
+            <div class="depth-chart-area">
+              <div class="depth-chart-container" id="depthChart"></div>
+              <div class="depth-indicator"></div>
+            </div>
+            <!-- 底部信息 -->
+            <div class="depth-info">
+              <div class="depth-label-dropdown">
+                Below Transducer
+                <div class="dropdown-arrow"></div>
+              </div>
+              <div class="depth-value">
+                <span class="value">12.3</span>
+                <span class="unit">m</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="small-box">
+          <div class="alarm-box">
+            <!-- 顶部标签栏 -->
+            <div class="alarm-tabs">
+              <div class="alarm-tab" :class="{ active: activeTab === 'alarm' }" @click="switchTab('alarm')">Alarm</div>
+              <div class="alarm-tab" :class="{ active: activeTab === 'wind' }" @click="switchTab('wind')">Wind</div>
+              <div class="alarm-tab" :class="{ active: activeTab === 'weather' }" @click="switchTab('weather')">Weather</div>
+              <div class="alarm-tab" :class="{ active: activeTab === 'forecast' }" @click="switchTab('forecast')">Forecast</div>
+            </div>
+            <!-- 内容区域 -->
+            <div class="alarm-content" :class="{ active: activeTab === 'alarm' }" id="alarm-content">
+              <div class="alarm-item">1# Generator Overspeed Alarm</div>
+              <div class="alarm-item">2 #Generator Overspeed Shutdown</div>
+              <div class="alarm-item">1# Generator Overspeed Alarm</div>
+              <div class="alarm-item">2 #Generator Overspeed Shutdown</div>
+            </div>
+            <div class="alarm-content" :class="{ active: activeTab === 'wind' }" id="wind-content">
+              <div class="wind-panel">
+                <div class="wind-gauge">
+                  <div class="wind-gauge-circle">
+                    <!-- 旋转的图标容器 -->
+                    <div class="wind-direction-ring"></div>
+                    <!-- 中间区域先留空，后面再补细节 -->
+                    <div class="wind-compass-direction-pointer"></div>
+                    <!-- 外圈得指南标 -->
+                    <div class="wind-compass-direction-pointer-outer"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="wind-info">
+                <div class="wind-info-block">
+                  <div class="wind-value">08.5</div>
+                  <div class="wind-label">
+                    <span>Speed</span>
+                    <span class="unit">kn</span>
+                  </div>
+                </div>
+                <div class="wind-info-block wind-info-block--right">
+                  <div class="wind-value">026°</div>
+                  <div class="wind-label">
+                    <span>Direction</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="alarm-content" :class="{ active: activeTab === 'weather' }" id="weather-content">
+              <!-- 上半部分：天气图标和参数 -->
+              <div class="weather-main">
+                <!-- 左侧天气图标 -->
+                <div class="weather-icon-large">
+                  <!-- 天气图标占位符，图片后续添加 -->
+                </div>
+                <!-- 右侧参数列表 -->
+                <div class="weather-params">
+                  <div class="weather-param-item">
+                    <div class="weather-param-icon">
+                      <!-- 云图标占位符 -->
+                    </div>
+                    <span class="weather-param-label">Weather</span>
+                    <span class="weather-param-value">{{ weatherData.weather }}</span>
+                  </div>
+                  <div class="weather-param-item">
+                    <div class="weather-param-icon">
+                      <!-- 温度计图标占位符 -->
+                    </div>
+                    <span class="weather-param-label">Temperature</span>
+                    <span class="weather-param-value">{{ weatherData.temperature }}</span>
+                  </div>
+                  <div class="weather-param-item">
+                    <div class="weather-param-icon">
+                      <!-- 水滴图标占位符 -->
+                    </div>
+                    <span class="weather-param-label">Humidity</span>
+                    <span class="weather-param-value">{{ weatherData.humidity }}</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 下半部分：风向和位置信息 -->
+              <div class="weather-details">
+                <div class="weather-detail-item">
+                  <div class="weather-detail-value">{{ weatherData.windDirection }}</div>
+                  <div class="weather-detail-label">windDirection</div>
+                </div>
+                <div class="weather-detail-item">
+                  <div class="weather-detail-value">{{ weatherData.windPower }}</div>
+                  <div class="weather-detail-label">windPower</div>
+                </div>
+                <div class="weather-detail-item">
+                  <div class="weather-detail-value">{{ weatherData.province }}</div>
+                  <div class="weather-detail-label">Province</div>
+                </div>
+              </div>
+            </div>
+            <div class="alarm-content" :class="{ active: activeTab === 'forecast' }" id="forecast-content">
+              <!-- 使用v-for循环渲染预报数据 -->
+              <div class="forecast-day" v-for="(forecast, index) in forecastData" :key="index">
+                <div class="forecast-day-name">{{ forecast.dayName }}</div>
+                <div class="forecast-day-date">{{ forecast.date }}</div>
+                <div class="forecast-icon">
+                  <!-- 天气图标占位符，图片后续添加 -->
+                </div>
+                <div class="forecast-temp">{{ forecast.temp }}</div>
+                <div class="forecast-condition">{{ forecast.condition }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右边：1006px -->
+    <div class="right-section">
+      <!-- 右侧顶部tabs -->
+      <div class="right-tabs">
+        <div class="right-tab" :class="{ active: activeRightTab === 'propulsion' }" @click="switchRightTab('propulsion')">PROPULSION POWER</div>
+        <div class="right-tab" :class="{ active: activeRightTab === 'station' }" @click="switchRightTab('station')">MARINE ELECTRICAL POWER</div>
+        <div class="right-tab" :class="{ active: activeRightTab === 'navigation' }" @click="switchRightTab('navigation')">NAVIGATION INFORMATION</div>
+      </div>
+      <!-- 推进系统内容区域 -->
+      <div class="right-content" v-show="activeRightTab === 'propulsion'">
+      <!-- 1# 推进系统 -->
+      <div class="propulsion-section">
+        <div class="propulsion-header">
+          <div class="propulsion-title">1# Propulsion Shafting</div>
+          <div class="propulsion-buttons">
+            <button class="pill-button" @click="onMonitoringCurveClick">Monitoring Curve</button>
+            <button class="pill-button" @click="onAlarmRecordClick">Alarm Record</button>
+          </div>
+        </div>
+        <div class="propulsion-components">
+          <!-- 组件1: Main Diesel Engine -->
+          <div class="propulsion-component">
+            <div class="component-image component-image-1 "></div>
+            <div class="component-content">
+              <div class="component-title">Main Diesel Engine</div>
+              <div class="component-params">
+                <div class="param-row">
+                  <span class="param-label">RPM</span>
+                  <span class="param-value">
+                    <span class="param-number">900</span>
+                    <span class="param-unit"> rpm</span>
+                  </span>
+                </div>
+                <div class="param-row">
+                  <span class="param-label">LOP</span>
+                  <span class="param-value">
+                    <span class="param-number">267</span>
+                    <span class="param-unit"> kPa</span>
+                  </span>
+                </div>
+                <div class="param-row">
+                  <span class="param-label">CWT</span>
+                  <span class="param-value">
+                    <span class="param-number">80</span>
+                    <span class="param-unit"> °C</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="propulsion-connector"></div>
+          <!-- 组件2: Main Diesel Engine -->
+          <div class="propulsion-component">
+            <div class="component-image component-image-2"></div>
+            <div class="component-content">
+              <div class="component-title">Main Diesel Engine</div>
+              <div class="component-params">
+                <div class="param-row">
+                  <span class="param-label">CEDS</span>
+                  <span class="param-value">
+                    <span class="param-text">Engaged</span>
+                    <span class="param-dropdown">▾</span>
+                  </span>
+                </div>
+                <div class="param-row">
+                  <span class="param-label">LOPS</span>
+                  <span class="param-value">
+                    <span class="param-text">Normal</span>
+                    <span class="param-dropdown">▾</span>
+                  </span>
+                </div>
+                <div class="param-row">
+                  <span class="param-label">WOPS</span>
+                  <span class="param-value">
+                    <span class="param-text">Low Pressure</span>
+                    <span class="param-dropdown">▾</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="propulsion-connector"></div>
+          <!-- 组件3: Vertical Wing Rudder Propeller -->
+          <div class="propulsion-component">
+            <div class="component-image component-image-3"></div>
+            <div class="component-content">
+              <div class="component-title">Vertical Wing Rudder Propeller</div>
+              <div class="component-params">
+                <div class="param-row three-row" style="padding-right:10px;">
+                  <span class="param-label">VWRP-RPM</span>
+                  <span class="param-value">
+                    <span class="param-number">267</span>
+                    <span class="param-unit"> rpm</span>
+                  </span>
+                </div>
+                <div class="param-row three-row" style="padding-right:10px;">
+                  <span class="param-label">VWRP-RA</span>
+                  <span class="param-value">
+                    <span class="param-number">80</span>
+                    <span class="param-unit"> °C</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 分割线 -->
+      <div class="right-content-line"></div>
+      <!-- 2# 推进系统 -->
+      <div class="propulsion-section">
+        <div class="propulsion-header">
+          <div class="propulsion-title">2# Propulsion Shafting</div>
+          <div class="propulsion-buttons">
+            <button class="pill-button" @click="onMonitoringCurveClick">Monitoring Curve</button>
+            <button class="pill-button" @click="onAlarmRecordClick">Alarm Record</button>
+          </div>
+        </div>
+        <div class="propulsion-components">
+          <!-- 组件1: Main Diesel Engine -->
+          <div class="propulsion-component">
+            <div class="component-image component-image-4"></div>
+            <div class="component-content">
+              <div class="component-title">Main Diesel Engine</div>
+              <div class="component-params">
+                <div class="param-row">
+                  <span class="param-label">RPM</span>
+                  <span class="param-value">
+                    <span class="param-number">900</span>
+                    <span class="param-unit"> rpm</span>
+                  </span>
+                </div>
+                <div class="param-row">
+                  <span class="param-label">LOP</span>
+                  <span class="param-value">
+                    <span class="param-number">267</span>
+                    <span class="param-unit"> kPa</span>
+                  </span>
+                </div>
+                <div class="param-row">
+                  <span class="param-label">CWT</span>
+                  <span class="param-value">
+                    <span class="param-number">80</span>
+                    <span class="param-unit"> °C</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="propulsion-connector"></div>
+          <!-- 组件2: Main Diesel Engine -->
+          <div class="propulsion-component">
+            <div class="component-image component-image-5"></div>
+            <div class="component-content">
+              <div class="component-title">Main Diesel Engine</div>
+              <div class="component-params">
+                <div class="param-row">
+                  <span class="param-label">CEDS</span>
+                  <span class="param-value">
+                    <span class="param-text">Engaged</span>
+                    <span class="param-dropdown">▾</span>
+                  </span>
+                </div>
+                <div class="param-row">
+                  <span class="param-label">LOPS</span>
+                  <span class="param-value">
+                    <span class="param-text">Normal</span>
+                    <span class="param-dropdown">▾</span>
+                  </span>
+                </div>
+                <div class="param-row">
+                  <span class="param-label">WOPS</span>
+                  <span class="param-value">
+                    <span class="param-text">Low Pressure</span>
+                    <span class="param-dropdown">▾</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="propulsion-connector"></div>
+          <!-- 组件3: Vertical Wing Rudder Propeller -->
+          <div class="propulsion-component">
+            <div class="component-image component-image-6"></div>
+            <div class="component-content">
+              <div class="component-title">Vertical Wing Rudder Propeller</div>
+              <div class="component-params">
+                <div class="param-row" style="justify-content: space-between;padding-right:10px;">
+                  <span class="param-label">VWRP-RPM</span>
+                  <span class="param-value">
+                    <span class="param-number">267</span>
+                    <span class="param-unit"> rpm</span>
+                  </span>
+                </div>
+                <div class="param-row" style="justify-content: space-between;padding-right:10px;">
+                  <span class="param-label">VWRP-RA</span>
+                  <span class="param-value">
+                    <span class="param-number">80</span>
+                    <span class="param-unit"> °C</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      
+      <!-- 船舶电力系统内容区域 -->
+      <div class="right-content" v-show="activeRightTab === 'station'">
+        <div class="electrical-power-section">
+          <div class="electrical-header">
+            <div class="electrical-title">Marine Electrical Power System</div>
+            <div class="electrical-buttons">
+              <button class="pill-button" @click="onMonitoringCurveClick">Monitoring Curve</button>
+              <button class="pill-button" @click="onAlarmRecordClick">Alarm Record</button>
+            </div>
+          </div>
+          
+          <!-- 电力系统主内容区域 -->
+          <div class="electrical-main-content">
+            
+            <!-- 不规则布局 以中间为中心开始写  比较好定界面   设定为左右布局  细节微调-->
+             <!-- 左边区域 -->
+            <div class="Busbar-left">
+              <div class="generator-title">1# Generator Set</div>
+              <div class="Generato-wrapper">
+                <div class="Generato"></div>
+                <!-- 悬停显示的数据面板 -->
+                <div class="generator-data-panel">
+                  <div class="data-param-row">
+                    <span class="data-param-label">Power</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">33.25</span>
+                      <span class="data-param-unit"> kw</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Voltage</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">400</span>
+                      <span class="data-param-unit"> V</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Current</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">60</span>
+                      <span class="data-param-unit"> A</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Frequency</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">50.2</span>
+                      <span class="data-param-unit"> Hz</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Oil Pressure</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">150</span>
+                      <span class="data-param-unit"> kPa</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Water Temperature</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">70</span>
+                      <span class="data-param-unit"> °C</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="Generato-Busbar-line"></div>
+              <div class="Busbar">
+                <div class="Busbar-value">
+                  <div class="busbar-arrow">◀</div>
+                  <span class="busbar-label">Current</span>
+                  <div class="busbar-number-box">
+                    <span class="busbar-number">60</span>
+                  </div>
+                  <span class="busbar-unit">A</span>
+                </div>
+
+                <div class="Busbar-value Busbar-value-2">
+                  <div class="busbar-arrow">◀</div>
+                  <span class="busbar-label">Current</span>
+                  <div class="busbar-number-box">
+                    <span class="busbar-number">60</span>
+                  </div>
+                  <span class="busbar-unit">A</span>
+                </div>
+              </div>
+              <div class="Transformer-line">
+                <div class="Transformer-line-1"></div>
+                <div class="Transformer-line-2"></div>
+              </div>
+              <div class="Transformer">
+                <div class="Transformer-1"></div>
+                <div class="Transformer-2"></div>
+              </div>
+              <div class="discreption">
+                <div class="des-1">1# Dedicated Transformer</div>
+                <div class="des-2">1# Service Transformer</div>
+              </div>
+            </div>
+            <!-- 开关线 -->
+           <div class="Busbar-line"></div>
+            <!-- 右区域 -->
+            <div class="Busbar-right">
+              <div class="generator-title">2# Generator Set</div>
+              <div class="Generato-wrapper">
+                <div class="Generato"></div>
+                <!-- 悬停显示的数据面板 -->
+                <div class="generator-data-panel">
+                  <div class="data-param-row">
+                    <span class="data-param-label">Power</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">0</span>
+                      <span class="data-param-unit"> kw</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Voltage</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">0</span>
+                      <span class="data-param-unit"> V</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Current</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">0</span>
+                      <span class="data-param-unit"> A</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Frequency</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">0</span>
+                      <span class="data-param-unit"> Hz</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Oil Pressure</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">0</span>
+                      <span class="data-param-unit"> kPa</span>
+                    </span>
+                  </div>
+                  <div class="data-param-row">
+                    <span class="data-param-label">Water Temperature</span>
+                    <span class="data-param-value">
+                      <span class="data-param-number">0</span>
+                      <span class="data-param-unit"> °C</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="Generato-Busbar-line"></div>
+              <div class="Busbar">
+                <div class="Busbar-value">
+                  <div class="busbar-arrow">◀</div>
+                  <span class="busbar-label">Current</span>
+                  <div class="busbar-number-box">
+                    <span class="busbar-number">0</span>
+                  </div>
+                  <span class="busbar-unit">A</span>
+                </div>
+                <div class="Busbar-value Busbar-value-2">
+                  <div class="busbar-arrow">◀</div>
+                  <span class="busbar-label">Current</span>
+                  <div class="busbar-number-box">
+                    <span class="busbar-number">0</span>
+                  </div>
+                  <span class="busbar-unit">A</span>
+                </div>
+              </div>
+              <div class="Transformer-line">
+                <div class="Transformer-line-1"></div>
+                <div class="Transformer-line-2"></div>
+              </div>
+              <div class="Transformer">
+                <div class="Transformer-1"></div>
+                <div class="Transformer-2"></div>
+              </div>
+              <div class="discreption">
+                <div class="des-1">2# Service Transformer</div>
+                <div class="des-2">2# Dedicated Transformer</div>
+              </div>
+            </div> 
+          </div>
+        </div>
+      </div>
+      
+      <!-- 导航信息内容区域 -->
+      <div class="right-content" v-show="activeRightTab === 'navigation'">
+        <div class="navigation-information">
+          <!-- 1.bow thruster -->
+          <div class="nav-info-box-1">
+            <div class="nav-header">
+              <div class="nav-info-box-1-left">1.BOW THRUSTER</div>
+              <div class="nav-kuai"></div>
+            </div>
+            <div class="nav-content">
+              <div class="bow-thruster-display">
+                <!-- 左侧数值显示 -->
+                <div class="bow-thruster-values">
+                  <div class="value-row border-bottom">
+                    <span class="value-triangle">▶</span>
+                    <span class="value-main">72</span>
+                  </div>
+                  <div class="value-row">
+                    <div></div>
+                    <span class="value-secondary">062</span>
+                  </div>
+                  <div class="value-row ">
+                    <span class="label-text">Power</span>
+                    <span class="label-unit">%</span>
+                  </div>
+                </div>
+                <!-- 右侧滑块/条形图 -->
+                <div class="bow-thruster-slider">
+                  <div class="thruster-rotating-icon"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="nav-info-box-2">
+            <div class="left">
+              <div class="nav-header">
+                <div class="nav-info-box-2-left">2.PORT AZIMUTH</div>
+                <div class="nav-kuai"></div>
+              </div>
+              <div class="azimuth-content">
+                <!-- 左侧数值显示 -->
+                <div class="azimuth-values">
+                  <!-- Angle 部分 -->
+                  <div class="azimuth-value-section">
+                    <div class="value-row border-bottom">
+                      <span class="value-triangle">▶</span>
+                      <span class="value-main">45</span>
+                    </div>
+                    <div class="value-row">
+                      <div></div>
+                      <span class="value-secondary">030°</span>
+                    </div>
+                    <div class="value-label">Angle</div>
+                  </div>
+                  <!-- Power 部分 -->
+                  <div class="azimuth-value-section">
+                    <div class="value-row border-bottom">
+                      <span class="value-triangle">▶</span>
+                      <span class="value-main">72</span>
+                    </div>
+                    <div class="value-row">
+                      <div></div>
+                      <span class="value-secondary">063</span>
+                    </div>
+                    <div class="value-label">
+                      <span class="label-text">Power</span>
+                      <span class="label-unit">%</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- 右侧圆形控制 -->
+                <div class="azimuth-circle">
+                  <div class="circle-outer">
+                    <div class="circle-ring">
+                      <div class="rotating-icon">
+                        <div class="rotating-icon-top"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="right">
+              <div class="nav-header">
+                <div class="nav-info-box-2-left">3.STBD AZIMUTH</div>
+                <div class="nav-kuai"></div>
+              </div>
+              <div class="azimuth-content">
+                <!-- 左侧数值显示 -->
+                <div class="azimuth-values">
+                  <!-- Angle 部分 -->
+                  <div class="azimuth-value-section">
+                    <div class="value-row border-bottom">
+                      <span class="value-triangle">▶</span>
+                      <span class="value-main">45</span>
+                    </div>
+                    <div class="value-row">
+                      <div></div>
+                      <span class="value-secondary">030°</span>
+                    </div>
+                    <div class="value-label">Angle</div>
+                  </div>
+                  <!-- Power 部分 -->
+                  <div class="azimuth-value-section">
+                    <div class="value-row border-bottom">
+                      <span class="value-triangle">▶</span>
+                      <span class="value-main">72</span>
+                    </div>
+                    <div class="value-row">
+                      <div></div>
+                      <span class="value-secondary">063</span>
+                    </div>
+                    <div class="value-label">
+                      <span class="label-text">Power</span>
+                      <span class="label-unit">%</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- 右侧圆形控制 -->
+                <div class="azimuth-circle">
+                  <div class="circle-outer">
+                    <div class="circle-ring">
+                      <div class="rotating-icon">
+                        <div class="rotating-icon-top"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+           <!-- 分界线  -->
+          <div class="nav-info-box-line"></div>
+
+          <div class="thruster-rudder-container">
+            <!-- 左侧：PORT -->
+            <div class="thruster-rudder-column">
+              <!-- PORT THRUSTER -->
+              <div class="thruster-rudder-box">
+                <div class="thruster-rudder-header">
+                  <div class="thruster-rudder-title">4.PORT THRUSTER</div>
+                  <div class="nav-kuai"></div>
+                </div>
+                <div class="thruster-rudder-content">
+                  <!-- 左侧数值显示 -->
+                  <div class="thruster-values">
+                    <!-- Pitch 部分 -->
+                    <div class="thruster-value-section">
+                      <div class="value-row border-bottom">
+                        <span class="value-triangle">▶</span>
+                        <span class="value-main">72</span>
+                      </div>
+                      <div class="value-row">
+                        <div></div>
+                        <span class="value-secondary">063</span>
+                      </div>
+                      <div class="value-label">
+                        <span class="label-text">Pitch</span>
+                        <span class="label-unit">%</span>
+                      </div>
+                    </div>
+                    <!-- Power rpm 部分 -->
+                    <div class="thruster-value-section">
+                      <div class="value-row border-bottom">
+                        <span class="value-triangle">▶</span>
+                        <span class="value-main">700</span>
+                      </div>
+                      <div class="value-row">
+                        <div></div>
+                        <span class="value-secondary">0800</span>
+                      </div>
+                      <div class="value-label">
+                        <span class="label-text">Power</span>
+                        <span class="label-unit">rpm</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 右侧垂直条形图 -->
+                  <div class="thruster-bar-chart">
+                    <div class="thruster-rotating-icon"></div>
+                    <div class="thruster-line"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- PORT RUDDER -->
+              <div class="thruster-rudder-box">
+                <div class="thruster-rudder-header">
+                  <div class="thruster-rudder-title">6.PORT RUDDER</div>
+                  <div class="nav-kuai"></div>
+                </div>
+                <div class="rudder-content">
+                  <!-- 半圆形仪表盘 -->
+                  <div class="rudder-gauge">
+                    <img class="img" src="asserts/img/icon_21.png" alt="">
+                    <div class="sanxing-icon"></div>
+                  </div>
+                  <!-- 下方数值显示 -->
+                  <div class="rudder-values">
+                    <div class="value-row">
+                      <span class="value-triangle">▶</span>
+                      <span class="value-main" style="font-size: 18px;">72</span>
+                    </div>
+                    <div class="value-row">
+                      <div></div>
+                      <span class="value-secondary" style="font-size: 32px; margin:  0 5px;">063</span>
+                    </div>
+                    <div class="value-label Angle">
+                      <span class="label-text Angle-text ">° Angle</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 右侧：STBD -->
+            <div class="thruster-rudder-column">
+              <!-- STBD THRUSTER -->
+              <div class="thruster-rudder-box">
+                <div class="thruster-rudder-header">
+                  <div class="thruster-rudder-title">5.STBD THRUSTER</div>
+                  <div class="nav-kuai"></div>
+                </div>
+                <div class="thruster-rudder-content">
+                  <!-- 左侧数值显示 -->
+                  <div class="thruster-values">
+                    <!-- Pitch 部分 -->
+                    <div class="thruster-value-section">
+                      <div class="value-row border-bottom">
+                        <span class="value-triangle">▶</span>
+                        <span class="value-main">72</span>
+                      </div>
+                      <div class="value-row">
+                        <div></div>
+                        <span class="value-secondary">063</span>
+                      </div>
+                      <div class="value-label">
+                        <span class="label-text">Pitch</span>
+                        <span class="label-unit">%</span>
+                      </div>
+                    </div>
+                    <!-- Power rpm 部分 -->
+                    <div class="thruster-value-section">
+                      <div class="value-row border-bottom">
+                        <span class="value-triangle">▶</span>
+                        <span class="value-main">700</span>
+                      </div>
+                      <div class="value-row">
+                        <div></div>
+                        <span class="value-secondary">0800</span>
+                      </div>
+                      <div class="value-label">
+                        <span class="label-text">Power</span>
+                        <span class="label-unit">rpm</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 右侧垂直条形图 -->
+                  <div class="thruster-bar-chart">
+                    <div class="thruster-rotating-icon"></div>
+                    <div class="thruster-line"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- STBD RUDDER -->
+              <div class="thruster-rudder-box">
+                <div class="thruster-rudder-header">
+                  <div class="thruster-rudder-title">7.STBD RUDDER</div>
+                  <div class="nav-kuai"></div>
+                </div>
+                <div class="rudder-content">
+                  <!-- 半圆形仪表盘 -->
+                  <div class="rudder-gauge">
+                    <img class="img" src="asserts/img/icon_21.png" alt="">
+                    <div class="sanxing-icon"></div>
+                  </div>
+                  <!-- 下方数值显示 -->
+                  <div class="rudder-values">
+                    <div class="value-row ">
+                      <span class="value-triangle">▶</span>
+                      <span class="value-main">72</span>
+                    </div>
+                    <div class="value-row">
+                      <div></div>
+                      <span class="value-secondary" style="font-size: 32px;">063</span>
+                    </div>
+                    <div class="value-label Angle">
+                      <span class="label-text Angle-text">° Angle</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- Monitoring Curve 抽屉 -->
+    <el-drawer
+      class="monitoring-drawer"
+      title="Monitoring Curve"
+      :visible.sync="monitoringDrawerVisible"
+      :modal="false"
+      size="1027px"
+      direction="rtl">
+      <div class="monitoring-drawer-content">
+        <div class="monitoring-drawer-header">
+          <img
+            src="asserts/img/icon-29.png"
+            alt="close"
+            class="monitoring-drawer-close-icon"
+            @click="closeMonitoringDrawer">
+          <span>{{ drawerMode === 'alarm' ? 'Alarm Record' : 'Monitoring Curve' }}</span>
+        </div>
+        <div class="monitoring-drawer-grid" v-show="drawerMode !== 'alarm'">
+          <div class="monitoring-chart-card">
+            <div class="monitoring-chart-title">1# Monitoring Curve</div>
+            <div id="monitoring-chart-1" class="monitoring-chart"></div>
+          </div>
+          <div class="monitoring-chart-card">
+            <div class="monitoring-chart-title">2# Monitoring Curve</div>
+            <div id="monitoring-chart-2" class="monitoring-chart"></div>
+          </div>
+          <div class="monitoring-chart-card">
+            <div class="monitoring-chart-title">3# Monitoring Curve</div>
+            <div id="monitoring-chart-3" class="monitoring-chart"></div>
+          </div>
+          <div class="monitoring-chart-card">
+            <div class="monitoring-chart-title">4# Monitoring Curve</div>
+            <div id="monitoring-chart-4" class="monitoring-chart"></div>
+          </div>
+        </div>
+        <div class="alarm-drawer-table" v-show="drawerMode === 'alarm'">
+          <div class="alarm-table-header">
+            <div class="alarm-cell alarm-cell-time">Time</div>
+            <div class="alarm-cell alarm-cell-id">ID</div>
+            <div class="alarm-cell alarm-cell-desc">Description</div>
+            <div class="alarm-cell alarm-cell-unit">Unit</div>
+            <div class="alarm-cell alarm-cell-threshold">Threshold</div>
+            <div class="alarm-cell alarm-cell-measured">Measured Value</div>
+          </div>
+          <div class="alarm-table-body">
+            <div
+              class="alarm-row"
+              v-for="row in alarmRecords"
+              :key="row.id + '-' + row.time">
+              <div class="alarm-cell alarm-cell-time">{{ row.time }}</div>
+              <div class="alarm-cell alarm-cell-id">{{ row.id }}</div>
+              <div class="alarm-cell alarm-cell-desc">{{ row.description }}</div>
+              <div class="alarm-cell alarm-cell-unit">{{ row.unit }}</div>
+              <div class="alarm-cell alarm-cell-threshold">{{ row.threshold }}</div>
+              <div class="alarm-cell alarm-cell-measured">{{ row.measured }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-drawer>
+  </div>
+
+  <script>
+    // 安全注册 Element-UI（避免 ELEMENT 未定义导致后续脚本都不执行）
+    if (window.ELEMENT) {
+      Vue.use(window.ELEMENT);
+    }
+    new Vue({
+      el: '#app',
+      data: {
+        myloc : {
+          mylon: 0,    // 经度
+          mylat: 0,    // 纬度
+          speed: 0, // 速度
+          height: 0,
+          head_direction: 0,
+          speed_direction: 0,
+
+
+          Pitch: 0,
+          Roll:0,
+          Heave :0,
+		    },
+        serverIp: "122.224.243.126", // 这里改成你的 IP
+        status_Socket: null, // 状态WebSocket 连接
+        activeTab: 'alarm', // 当前激活的标签页
+        activeRightTab: 'propulsion', // 当前激活的右侧标签页
+        autofitInstance: null, // 响应式自适应实例
+        depthChart: null, // 深度图表实例
+        monitoringDrawerVisible: false, // 抽屉显示状态
+        drawerMode: 'curve', // 'curve' | 'alarm'
+        alarmRecords: [
+          { time: '2025-11-09 09:35', id: '01001', description: '1# Generator Overspeed Alarm', unit: 'r/min', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01002', description: '1# Generator Overspeed Alarm', unit: 'r/min', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01003', description: '1# Generator Overspeed Alarm', unit: 'Kpa', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01004', description: '1# Generator Overspeed Alarm', unit: 'Kpa', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01005', description: '1# Generator Overspeed Alarm', unit: '℃', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01006', description: '1# Generator Overspeed Alarm', unit: '℃', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01007', description: '1# Generator Overspeed Alarm', unit: 'V', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01008', description: '1# Generator Overspeed Alarm', unit: '℃', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01009', description: '1# Generator Overspeed Alarm', unit: 'V', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01010', description: '1# Generator Overspeed Alarm', unit: 'Kpa', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01001', description: '1# Generator Overspeed Alarm', unit: 'r/min', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01002', description: '1# Generator Overspeed Alarm', unit: 'r/min', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01003', description: '1# Generator Overspeed Alarm', unit: 'Kpa', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01004', description: '1# Generator Overspeed Alarm', unit: 'Kpa', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01005', description: '1# Generator Overspeed Alarm', unit: '℃', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01006', description: '1# Generator Overspeed Alarm', unit: '℃', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01007', description: '1# Generator Overspeed Alarm', unit: 'V', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01008', description: '1# Generator Overspeed Alarm', unit: '℃', threshold: '≥1725', measured: '1730' },
+          { time: '2025-11-09 09:35', id: '01009', description: '1# Generator Overspeed Alarm', unit: 'V', threshold: '≥1605', measured: '1610' },
+          { time: '2025-11-09 11:54', id: '01010', description: '1# Generator Overspeed Alarm', unit: 'Kpa', threshold: '≥1725', measured: '1730' }
+          
+        ],
+        // 天气数据
+        weatherData: {
+          weather: 'Sun',
+          temperature: '35°',
+          humidity: '40%',
+          windDirection: 'South',
+          windPower: 'South',
+          province: 'South'
+        },
+        // 天气预报数据
+        forecastData: [
+          { dayName: 'Fri.', date: 'Jan. 23', temp: '23°C/12°C', condition: 'Cloudy' },
+          { dayName: 'Sat.', date: 'Jan. 23', temp: '23°C/12°C', condition: 'Sunny' },
+          { dayName: 'Sun.', date: 'Jan. 23', temp: '23°C/12°C', condition: 'Cloudy' }
+        ],
+        weatherLoading: false, // 天气数据加载状态
+
+        // SRC 下拉选择
+        sourceOptions: ['SRC 1', 'SRC 2', 'SRC 3'],
+        selectedSources: {
+          hdg: 'SRC',
+          cog: 'SRC',
+          rot: 'SRC',
+          wind: 'SRC',
+          current: 'SRC'
+        },
+        openSourceKey: null
+      },
+      methods: {
+
+        toDMS(value, type) {
+					if (value === null || value === undefined) return "--";
+
+					const absVal = Math.abs(value);
+					const degrees = Math.floor(absVal);
+					const minutesFull = (absVal - degrees) * 60;
+					const minutes = Math.floor(minutesFull);
+					const seconds = Math.floor((minutesFull - minutes) * 60);
+
+					// 格式化
+					const degStr = degrees.toString().padStart(3, " ");  // 度：空格占位 3位
+					const minStr = minutes.toString().padStart(2, "0");  // 分：0占位 2位
+					const secStr = seconds.toString().padStart(2, "0");  // 秒：0占位 2位
+
+					const sign = value >= 0 ? "" : "-";
+
+          // 方向计算
+          let direction = "";
+          if (type === "lat") {
+              direction = value >= 0 ? "N" : "S";
+          } else if (type === "lon") {
+              direction = value >= 0 ? "E" : "W";
+          }
+
+					return `${degStr}°${minStr}'${secStr}"${direction}`;
+				},
+
+        onMonitoringCurveClick() {
+          console.log('onMonitoringCurveClick');  
+          this.drawerMode = 'curve';
+          this.monitoringDrawerVisible = true;
+          this.initMonitoringCharts();
+        },
+
+        onAlarmRecordClick() {
+          this.drawerMode = 'alarm';
+          this.monitoringDrawerVisible = true;
+        },
+
+        // 关闭 Monitoring Curve 抽屉
+        closeMonitoringDrawer() {
+          this.monitoringDrawerVisible = false;
+        },
+
+        toggleSourceDropdown(key) {
+          this.openSourceKey = this.openSourceKey === key ? null : key;
+        },
+
+        selectSource(key, opt) {
+          this.selectedSources[key] = opt;
+          this.openSourceKey = null;
+        },
+        // 切换标签页
+        switchTab(tabName) {
+          this.activeTab = tabName;
+        },
+        
+        // 切换右侧标签页
+        switchRightTab(tabName) {
+          this.activeRightTab = tabName;
+        },
+        
+        // 初始化响应式自适应
+        initAutofit() {
+          // 初始化响应式自适应，基于1920x1080设计稿
+          this.autofitInstance = autofitResponsive({
+            dw: 1920,  // 设计稿宽度
+            dh: 1080,  // 设计稿高度  
+            el: '.autofit-container', // 渲染的dom
+            mode: 'fit', // 'fit' 等比例适配保持比例, 'fill' 填满屏幕可能变形
+            resize: true // 是否监听resize事件
+          });
+          
+          // 调试信息：显示当前缩放比例
+          this.logScale();
+          window.addEventListener('resize', () => {
+            this.logScale();
+          });
+          
+          // 监听全屏状态变化
+          document.addEventListener('fullscreenchange', () => {
+            setTimeout(() => {
+              this.autofitInstance.init(); // 重新初始化适配
+              this.logScale();
+            }, 100);
+          });
+        },
+        
+        // 显示缩放比例
+        logScale() {
+          if (this.autofitInstance) {
+            const scale = this.autofitInstance.getScale();
+            console.log('当前缩放比例 X:', scale.x.toFixed(3), 'Y:', scale.y.toFixed(3));
+            console.log('窗口尺寸:', window.innerWidth + 'x' + window.innerHeight);
+            console.log('设计稿尺寸: 1920x1080');
+          }
+        },
+        
+        // 获取天气数据
+        async getWeatherData() {
+          try {
+            this.weatherLoading = true;
+            
+            // 等待UapiClient加载完成
+            let retryCount = 0;
+            while (typeof window.UapiClient === 'undefined' && retryCount < 10) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              retryCount++;
+            }
+            
+            // 检查UapiClient是否可用
+            if (typeof window.UapiClient === 'undefined') {
+              console.error('UapiClient is not available. Please check if the script is loaded correctly.');
+              return;
+            }
+            
+            const client = new window.UapiClient('https://uapis.cn');
+            const payload = {
+              city: "北京",
+              adcode: "110000",
+              extended: false,
+              indices: false,
+              forecast: false
+            };
+            
+            const data = await client.misc.getMiscWeather(payload);
+            console.log('Weather data:', data);
+            
+            // 更新天气数据 - 根据实际API返回的数据结构调整
+            // 如果API返回的数据结构不同，需要相应调整
+            if (data) {
+              // 处理不同的数据结构
+              const weatherInfo = data.data || data.result || data;
+              
+              // 更新当前天气信息
+              if (weatherInfo.weather) {
+                this.weatherData.weather = weatherInfo.weather;
+              }
+              if (weatherInfo.temperature !== undefined) {
+                this.weatherData.temperature = weatherInfo.temperature + '°';
+              }
+              if (weatherInfo.humidity !== undefined) {
+                this.weatherData.humidity = weatherInfo.humidity + '%';
+              }
+              if (weatherInfo.wind_direction) {
+                this.weatherData.windDirection = weatherInfo.wind_direction;
+              }
+              if (weatherInfo.wind_power) {
+                this.weatherData.windPower = weatherInfo.wind_power;
+              }
+              if (weatherInfo.province) {
+                this.weatherData.province = weatherInfo.province;
+              }
+              
+              // 如果有预报数据，更新预报
+              if (weatherInfo.forecast && Array.isArray(weatherInfo.forecast)) {
+                this.forecastData = weatherInfo.forecast.slice(0, 3).map((item, index) => {
+                  const days = ['Sun.', 'Mon.', 'Tue.', 'Wed.', 'Thu.', 'Fri.', 'Sat.'];
+                  const date = new Date();
+                  date.setDate(date.getDate() + index + 1);
+                  return {
+                    dayName: days[date.getDay()],
+                    date: (date.getMonth() + 1) + '.' + date.getDate(),
+                    temp: (item.temp || item.temperature || '23°C/12°C'),
+                    condition: (item.condition || item.weather || 'Cloudy')
+                  };
+                });
+              }
+            }
+          } catch (error) {
+            console.error('获取天气数据失败:', error);
+            // 可以在这里添加错误提示
+          } finally {
+            this.weatherLoading = false;
+          }
+        },
+        
+        // 初始化深度图表
+        initDepthChart() {
+          this.$nextTick(() => {
+            const depthChartDom = document.getElementById('depthChart');
+            if (depthChartDom && typeof echarts !== 'undefined') {
+              this.depthChart = echarts.init(depthChartDom);
+              
+              // 模拟深度数据（深度轮廓：左侧高，中间低，右侧高）
+              const depthData = [7, 5, 3, 2, 1.5, 2, 4, 6, 8, 10, 9.5, 8.5];
+              const xAxisData = [];
+              for (let i = 0; i < depthData.length; i++) {
+                xAxisData.push('');
+              }
+              
+              // 计算蓝色三角形指示器的位置（对应深度轮廓的最低点，即最深的位置）
+              // Y轴正常方向：深度值越大，在图表中位置越靠下
+              // 指示器应该对应曲线的最低点（最深的位置，即深度值最大的地方）
+              // 后面根据业务求定 暂时通过蓝湖看不出来是什么标准来定的
+              const maxDepth = Math.max(...depthData);
+              const chartHeight = depthChartDom.offsetHeight || 150;
+              // 计算最深点在图表中的位置百分比（从顶部开始，深度值越大位置越靠下）
+              const indicatorTopPercent = (maxDepth / 12) * 100;
+              
+              // 更新指示器位置
+              const indicator = document.querySelector('.depth-indicator');
+              if (indicator) {
+                indicator.style.top = indicatorTopPercent + '%';
+              }
+              
+              const option = {
+                grid: {
+                  left: 0,
+                  right: 15,
+                  top: 5,
+                  bottom: 0,
+                  containLabel: false
+                },
+                xAxis: {
+                  type: 'category',
+                  data: xAxisData,
+                  show: false,
+                  boundaryGap: false
+                },
+                yAxis: {
+                  type: 'value',
+                  inverse: false, // Y轴正常，深度值越大越往下
+                  show: false,
+                  min: 0,
+                  max: 12
+                },
+                series: [
+                  {
+                    name: 'Depth',
+                    type: 'line',
+                    smooth: true,
+                    data: depthData,
+                    areaStyle: {
+                      color: {
+                        type: 'linear',
+                        x: 0,
+                        y: 0,
+                        x2: 0,
+                        y2: 1,
+                        colorStops: [
+                          { offset: 0, color: 'rgba(255, 255, 255, 1)' },
+                          { offset: 1, color: 'rgba(255, 255, 255, 0.1)' }
+                        ]
+                      }
+                    },
+                    lineStyle: {
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      width: 1.5
+                    },
+                    symbol: 'none',
+                    emphasis: {
+                      focus: 'series'
+                    }
+                  },
+                  {
+                    // 水平参考线
+                    name: 'Reference',
+                    type: 'line',
+                    data: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+                    lineStyle: {
+                      color: '#888',
+                      width: 1,
+                      type: 'solid'
+                    },
+                    symbol: 'none',
+                    silent: true
+                  }
+                ],
+                backgroundColor: 'transparent'
+              };
+              
+              this.depthChart.setOption(option);
+              
+              // 响应式调整
+              window.addEventListener('resize', () => {
+                // 延迟调整图表大小，确保autofit完成后再调整
+                setTimeout(() => {
+                  if (this.depthChart) {
+                    this.depthChart.resize();
+                  }
+                }, 100);
+              });
+            }
+          });
+        },
+
+        // 初始化 Monitoring Curve 抽屉中的 4 个图表
+        initMonitoringCharts() {
+          if (typeof echarts === 'undefined') return;
+          this.$nextTick(() => {
+            const baseOption = {
+              tooltip: { trigger: 'axis' },
+              grid: { left: 50, right: 30, top: 40, bottom: 60 },
+              xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                axisLine: { lineStyle: { color: '#555' } },
+                axisLabel: { color: '#999' },
+                data: ['00:00','04:00','08:00','10:00','12:00','16:00','20:00']
+              },
+              yAxis: {
+                type: 'value',
+                axisLine: { lineStyle: { color: '#555' } },
+                axisLabel: { color: '#999' },
+                splitLine: { lineStyle: { color: '#333' } }
+              },
+              legend: {
+                bottom: 10,
+                textStyle: { color: '#ccc' },
+                data: ['曲线 1', '曲线 2']
+              },
+              series: [
+                {
+                  name: '曲线 1',
+                  type: 'line',
+                  smooth: false,
+                  symbol: 'none',
+                  lineStyle: { color: '#ff9f43', width: 2 },
+                  data: [0, 50, 120, 200, 250, 300, 260]
+                },
+                {
+                  name: '曲线 2',
+                  type: 'line',
+                  smooth: false,
+                  symbol: 'none',
+                  lineStyle: { color: '#1dd1a1', width: 2 },
+                  data: [0, 10, 70, 260, 160, 180, 40]
+                }
+              ]
+            };
+
+            for (let i = 1; i <= 4; i++) {
+              const dom = document.getElementById(`monitoring-chart-${i}`);
+              if (!dom) continue;
+              let chart = echarts.getInstanceByDom(dom);
+              if (!chart) {
+                chart = echarts.init(dom);
+              }
+              chart.setOption(baseOption, true);
+            }
+          });
+        }
+      },
+      mounted() {
+        //后端socket连接
+        this.status_Socket = new WebSocket(`ws://${this.serverIp}:18080`);  // 连接到 WebSocket 服务器
+
+        this.status_Socket.onmessage = (event) => {
+					const data = JSON.parse(event.data);  // 从服务器接收的数据（包含键值对）
+					console.log(data);
+
+					data.forEach(item => {
+						if (item.key.includes('IMU')) {
+							try {
+								let imuData = item.value;
+
+								if (typeof imuData === 'string') {
+									imuData = JSON.parse(imuData);
+								}
+
+								if (imuData && imuData.Lon && imuData.Lat) {
+
+
+									this.myloc.mylat = imuData.Lat ?? 0;
+									this.myloc.mylon = imuData.Lon ?? 0;
+									this.myloc.speed = parseFloat(imuData.speed).toFixed(1);
+									this.myloc.head_direction = ((parseFloat(imuData.heading) + 360.0) % 360.0).toFixed(1);
+									this.myloc.speed_direction = ((parseFloat(imuData.angle) + 360.0) % 360.0).toFixed(1);
+									this.myloc.height = parseFloat(imuData.height).toFixed(1);
+
+                  this.myloc.Pitch = imuData.Pitch ?? 0;
+									this.myloc.Roll = imuData.Roll ?? 0;
+                  this.myloc.Heave = imuData.Heave ?? 0;
+
+
+								}
+							} catch (e) {
+								console.error("Error parsing IMU data:", e);
+							}
+						}
+						else if (item.key.includes('LOST')) {
+
+							try {
+								let lostData = item.value;
+
+								if (typeof lostData === 'string') {
+									lostData = JSON.parse(lostData);
+								}
+
+								if (lostData) {
+
+									this.systems.GPS = lostData.GPS === "1";
+									this.systems.雷达 = lostData.lada === "1";
+									this.systems.动力 = lostData.dongli === "1";
+									this.systems.电力 = lostData.dianli === "1";
+								}
+							} catch (e) {
+								console.error("Error parsing IMU data:", e);
+							}
+						}
+
+						else if (item.key.includes('Navi11')) {
+							try {
+								let NaviData = item.value;
+
+								if (typeof NaviData === 'string') {
+									NaviData = JSON.parse(NaviData);
+								}
+								// 检查 NaviData 是否有效，并且是否有 GPath
+								if (NaviData && NaviData.GPath) {
+									// 提取 LPath 数据
+									let GPath = NaviData.GPath; // 格式: $GP,2,122.327786,29.917094,122.297430,29.906215,...
+
+									// 对比新的 GPath 是否与全局的 GPath 一致
+									if (GPath !== previousGPath) {
+
+										// 更新全局变量
+										previousGPath = GPath;
+										console.log("更新全局变量");
+										Path.GPath = GPath;
+/*
+							// 解析 GPath 数据
+							let parts = GPath.split(',');  // 按逗号分隔
+							let pointCount = parseInt(parts[1], 10);  // 第二个值是点的数量
+							let polylinePoints = [];
+
+							// 从第3个值开始，每两个值是经纬度坐标
+							for (let i = 2; i < parts.length - 1; i += 2) {
+								let lon = parseFloat(parts[i]);   // 经度
+								let lat = parseFloat(parts[i + 1]); // 纬度
+								polylinePoints.push([lat, lon]);
+							}
+							//this.polylinePoints =polylinePoints
+							// 如果已经有折线，则移除之前的折线
+							if (polyline) {
+								map.removeLayer(polyline);
+							}
+
+							// 绘制新的折线
+							//polyline = L.polyline(polylinePoints, { color: '#ff00ff', weight: 2 , zIndex: 11}).addTo(map);
+					*/	}
+								}
+								else {
+									Path.GPath = "";
+								}
+								// 检查 NaviData 是否有效，并且是否有 LPath
+								if (NaviData && NaviData.LPath) {
+									// 提取 LPath 数据
+									let LPath = NaviData.LPath; // 格式: $LP,2,122.327786,29.917094,122.297430,29.906215,...
+									// 对比新的 GPath 是否与全局的 GPath 一致
+									if (LPath !== previousLPath) {
+										// 更新全局变量
+										previousLPath = LPath;
+										Path.LPath = LPath;
+										/*
+										// 解析 LPath 字符串，跳过第一个 '$LP' 和点的数量
+										let parts = LPath.split(',');
+										let pointCount = parseInt(parts[2], 10); // 第二个值为点的数量
+										let coordinates = [];
+			
+										// 从第3个值开始，按每两个数为一对经纬度坐标
+										for (let i = 3; i < parts.length - 1; i += 2) {
+											let lon = parseFloat(parts[i]);
+											let lat = parseFloat(parts[i + 1]);
+											coordinates.push([lat, lon]);
+										}
+			
+										// 如果已有折线，先移除之前的折线
+										if (Lpath_polyline ) {
+											this.map.removeLayer(Lpath_polyline );
+										}
+			
+										// 绘制新的折线
+										Lpath_polyline = L.polyline(coordinates, { color: 'blue' , zIndex: 10}).addTo(map);
+									*/
+									}
+
+									// 可选：让折线自动适应地图视图
+									//map.fitBounds(Lpath_polyline.getBounds());
+								}
+								else {
+									Path.LPath = "";
+									previousLPath = "";
+								}
+							} catch (e) {
+								console.error("Error parsing IMU data:", e);
+							}
+						}
+
+
+
+
+					});
+				};
+
+        // 初始化响应式自适应
+        this.initAutofit();
+        
+        // 初始化深度图表
+        this.initDepthChart();
+        
+        // 获取天气数据
+        this.getWeatherData();
+
+        // 点击空白处关闭 SRC 下拉
+        this._onDocClick = () => {
+          this.openSourceKey = null;
+        };
+        document.addEventListener('click', this._onDocClick);
+      },
+      beforeDestroy() {
+        if (this._onDocClick) {
+          document.removeEventListener('click', this._onDocClick);
+          this._onDocClick = null;
+        }
+        // 清理图表实例
+        if (this.depthChart) {
+          this.depthChart.dispose();
+          this.depthChart = null;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

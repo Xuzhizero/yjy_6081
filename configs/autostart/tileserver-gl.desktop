@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Exec=gnome-terminal -- bash -c "/home/ship6081/run1.sh; exec bash"
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name[zh_CN]=1
+Name=/home/ship6081/.nvm/versions/node/v18.20.8/bin/tileserver-gl
+Comment[zh_CN]=
+Comment=

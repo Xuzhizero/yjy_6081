@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet 示例</title>
+    <link rel="stylesheet" href="leaflet.css" />
+    <style>
+        #map { height: 1000px; }
+    </style>
+</head>
+<body>
+<div id="zoomLevel">当前缩放级别: 2</div> <!-- 显示缩放级别 -->
+
+<button class="custom-button" id="drawButton">开始绘制折线</button>
+<div id="coords"> --</div>
+
+    <div id="map"></div>
+    <script src="leaflet.js"></script>
+    <script>
+		var mylon;
+		var mylat;
+        // 创建自定义SVG图标
+        var iconUrl = '本船.svg';  // 替换为你本地的SVG文件路径
+
+        function createIcon(rotation = 0,iconUrl= '本船.svg') {
+            return L.divIcon({
+                className: 'custom-icon',
+                html: `<img src="${iconUrl}" style="transform: rotate(${rotation}deg); width: 12px; height: 30px;" />`,
+                iconSize: [12, 30],  // 图标大小
+                iconAnchor: [6, 15],  // 锚点位置
+                popupAnchor: [0, -15]  // 弹窗位置
+            });
+        }
+		function createIcon_ziji(rotation = 0,iconUrl= '自己船.svg') {
+            return L.divIcon({
+                className: 'custom-icon',
+                html: `<img src="${iconUrl}" style="transform: rotate(${rotation}deg); width: 80px; height: 80px;" />`,
+                iconSize: [80, 80],  // 图标大小
+                iconAnchor: [40, 40],  // 锚点位置
+                popupAnchor: [0, -15]  // 弹窗位置
+            });
+        }
+		
+
+        // 初始化地图，设置中心和缩放级别
+        var map = L.map('map', {
+            crs: L.CRS.EPSG3395,
+            zoom: 2,
+			attributionControl: false,  // 禁用右下角的 Leaflet 标志
+			zoomControl: false // 禁用左上角的 zoom 控件
+        }).setView([39.90, 116.40], 2);
+
+
+
+// 创建控件
+var control = L.control({ position: 'bottomright' });
+
+control.onAdd = function (map) {
+    var container = L.DomUtil.create('div', 'leaflet-control-custom');
+    
+    // 创建一个图标元素，使用 <img> 标签
+    var icon = L.DomUtil.create('img', 'control-icon');
+    icon.src = '聚焦.svg';  // 图标URL，替换为你自己的图标路径
+    icon.alt = 'icon';
+
+    // 将图标添加到控件容器中
+    container.appendChild(icon);
+    
+	
+	    // 添加点击事件，点击后将地图居中
+    container.onclick = function () {
+
+	// 将地图居中到指定的经纬度，并设置缩放级别
+	map.setView([mylat, mylon]);
+    };
+	
+    return container;
+};
+control.onclick
+
+// 添加到地图
+control.addTo(map);
+
+// 使用 CSS 定义样式来精确调整位置
+var style = document.createElement('style');
+style.innerHTML = `
+    .leaflet-control-custom {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 32px;
+        height: 32px;
+        position: absolute;
+        bottom: 70px;   /* 精确设置距离底部的距离 */
+        right: 0px;    /* 精确设置距离右边的距离 */
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 50%;  /* 可选，圆形 */
+    }
+
+    .control-icon {
+        width: 30px;
+        height: 30px;
+    }
+`;
+document.head.appendChild(style);
+
+
+        // 创建高德地图图层
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            subdomains: ['1', '2', '3', '4'],
+            minZoom: 2,
+            maxZoom: 17,
+			
+           // attribution: '高德地图'
+        }).addTo(map);
+		
+		L.control.zoom({
+        position:'bottomright',
+        zoomInTitle:'放大',
+        zoomOutTitle:'缩小'
+		}).addTo(map);
+		
+		L.control.scale({
+        position:'bottomleft',
+        maxWidth:'100',
+        imperial:false
+		}).addTo(map);
+	
+
+				// 获取显示 zoom 等级的容器
+        const zoomLevelDisplay = document.getElementById('zoomLevel');
+		
+		// 监听地图缩放事件
+        map.on('zoom', function() {
+            // 获取当前 zoom 等级并更新到页面
+            const zoomLevel = map.getZoom();
+            zoomLevelDisplay.innerText = `当前缩放级别: ${zoomLevel}`;
+        });
+
+
+		let Lpath_polyline; // 用于保存当前的折线对象，方便之后清除覆盖
+
+
+        // 创建全局标记用于显示船只位置
+        var shipMarker = L.marker([0, 0], { icon: createIcon_ziji() }).addTo(map);
+
+        // 模拟接收到的实时数据并更新船只位置
+        const socket = new WebSocket('ws://172.11.21.92:8080');  // 连接到 WebSocket 服务器
+
+
+		let previousGPath = '';  // 全局变量保存上次的 GPath
+		let previousLPath = '';
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);  // 从服务器接收的数据（包含键值对）
+			console.log(data);
+			
+            data.forEach(item => {
+                if (item.key.includes('IMU')) {
+                    try {
+                        let imuData = item.value;
+
+                        if (typeof imuData === 'string') {
+                            imuData = JSON.parse(imuData);
+                        }
+
+                        if (imuData && imuData.Lon && imuData.Lat) {
+
+							mylat = imuData.Lat;
+							mylon = imuData.Lon;
+                            // 更新船只位置
+                            shipMarker.setLatLng([mylat, mylon]);
+
+                            // 旋转图标到指定角度
+                            const heading = imuData.heading || 0;  // 获取旋转角度（假设为Heading字段）
+							//console.log(heading)
+                            shipMarker.setIcon(createIcon_ziji(heading));  // 更新图标的旋转角度
+
+                            // 更新弹窗内容
+                            shipMarker.setPopupContent(`当前位置: 经度 ${mylon}, 纬度 ${mylat}`);
+                        }
+                    } catch (e) {
+                        console.error("Error parsing IMU data:", e);
+                    }
+                }
+				
+			
+				if (item.key.includes('Navi')) {
+					try {
+						let NaviData = item.value;
+
+						if (typeof NaviData === 'string') {
+							NaviData = JSON.parse(NaviData);
+						}
+						// 检查 NaviData 是否有效，并且是否有 GPath
+						if (NaviData &&  NaviData.GPath) {
+							// 提取 LPath 数据
+							let GPath = NaviData.GPath; // 格式: $GP,2,122.327786,29.917094,122.297430,29.906215,...
+							
+							// 对比新的 GPath 是否与全局的 GPath 一致
+							if (GPath !== previousGPath) {
+
+								// 更新全局变量
+								previousGPath = GPath;
+
+								// 解析 GPath 数据
+								let parts = GPath.split(',');  // 按逗号分隔
+								let pointCount = parseInt(parts[1], 10);  // 第二个值是点的数量
+								let polylinePoints = [];
+
+								// 从第3个值开始，每两个值是经纬度坐标
+								for (let i = 2; i < parts.length - 1; i += 2) {
+									let lon = parseFloat(parts[i]);   // 经度
+									let lat = parseFloat(parts[i + 1]); // 纬度
+									polylinePoints.push([lat, lon]);
+								}
+
+								// 如果已经有折线，则移除之前的折线
+								if (polyline) {
+									map.removeLayer(polyline);
+								}
+
+								// 绘制新的折线
+								polyline = L.polyline(polylinePoints, { color: '#ff00ff', weight: 2 , zIndex: 11}).addTo(map);
+							}
+						}
+						// 检查 NaviData 是否有效，并且是否有 LPath
+						if (NaviData &&  NaviData.LPath) {
+							// 提取 LPath 数据
+							let LPath = NaviData.LPath; // 格式: $LP,2,122.327786,29.917094,122.297430,29.906215,...
+							// 对比新的 GPath 是否与全局的 GPath 一致
+							if (LPath !== previousLPath) {
+								// 更新全局变量
+								previousLPath = LPath;
+							
+								// 解析 LPath 字符串，跳过第一个 '$LP' 和点的数量
+								let parts = LPath.split(',');
+								let pointCount = parseInt(parts[2], 10); // 第二个值为点的数量
+								let coordinates = [];
+
+								// 从第3个值开始，按每两个数为一对经纬度坐标
+								for (let i = 3; i < parts.length - 1; i += 2) {
+									let lon = parseFloat(parts[i]);
+									let lat = parseFloat(parts[i + 1]);
+									coordinates.push([lat, lon]);
+								}
+
+								// 如果已有折线，先移除之前的折线
+								if (Lpath_polyline ) {
+									map.removeLayer(Lpath_polyline );
+								}
+
+								// 绘制新的折线
+								Lpath_polyline = L.polyline(coordinates, { color: 'blue' , zIndex: 10}).addTo(map);
+							}
+
+							// 可选：让折线自动适应地图视图
+							//map.fitBounds(Lpath_polyline.getBounds());
+						}
+						
+					} catch (e) {
+						console.error("Error parsing IMU data:", e);
+					}
+				}
+				
+            });
+        };
+
+		// 用来存储每个船的位置信息
+		let shipsMap = new Map();
+
+		 // 创建 WebSocket 连接到服务器
+        const socket_radar = new WebSocket('ws://172.11.21.92:8181'); // 替换为实际的 WebSocket 服务端地址
+
+        socket_radar.onopen = () => {
+            console.log('WebSocket 已连接到服务器');
+        };
+
+        socket_radar.onmessage = (event) => {
+ 
+           // 按逗号分隔数据
+			const values = event.data.split(',');
+
+			const id = values[1];            // 1号位：id
+			const lat = parseFloat(values[9]); // 9号位：纬度
+			const lon = parseFloat(values[10]); // 10号位：经度
+			const heading = parseFloat(values[11]); // 11号位：航向
+
+			// 打印解析后的数据
+			console.log(`收到数据 - ID: ${id}, 纬度: ${lat}, 经度: ${lon}, 航向: ${heading}`);
+
+			// 获取当前时间戳
+			const currentTime = Date.now();
+
+			// 如果 map 中已经有该 id，则更新位置
+			if (shipsMap.has(id)) {
+				console.log("已经有该 id")
+				
+				// 获取现有船只的标记和更新时间
+				const shipData = shipsMap.get(id);
+				//const { tmpshipMarker, lastUpdateTime } = shipData;
+				shipData.lastUpdateTime=currentTime;
+
+				tmpshipMarker =shipData.shipMarker
+				// 更新船的位置
+				tmpshipMarker.setLatLng([lat, lon]);
+				tmpshipMarker.setIcon(  createIcon(heading) );
+				//tmpshipMarker.setRotationAngle(heading); // 更新航向
+				//shipMarker.setPopupContent(`ID: ${id}, 当前位置: 经度 ${lon}, 纬度 ${lat}, 航向 ${heading}`);
+			} else {
+				// 如果没有该 id，则创建新的标记
+				const tmpshipMarker = L.marker([lat, lon], { icon: createIcon(heading) }).addTo(map);
+				
+				
+				//var shipMarker = L.marker([39.90, 116.40], { icon: createIcon() }).addTo(map);
+
+				// 设置标记的弹出内容
+				//shipMarker.bindPopup(`ID: ${id}, 当前位置: 经度 ${lon}, 纬度 ${lat}, 航向 ${heading}`);
+				
+				// 设置航向（根据航向旋转标记）
+				//tmpshipMarker.setRotationAngle(heading);
+
+	
+				// 将船只标记存入 map，包含上次更新时间
+				shipsMap.set(id, {
+					shipMarker: tmpshipMarker,
+					lastUpdateTime: currentTime
+				});
+			}
+
+
+           
+        };
+
+        socket_radar.onclose = () => {
+            console.log('WebSocket 已关闭');
+        };
+
+        socket_radar.onerror = (error) => {
+            console.error('WebSocket 错误:', error);
+        };
+
+
+		// 每隔 1 秒检查一次每个船只的更新时间
+		setInterval(() => {
+			const currentTime = Date.now();
+
+			// 遍历 shipsMap 检查每个船只的更新时间
+			shipsMap.forEach((value, key) => {
+				const { shipMarker, lastUpdateTime } = value;
+
+				// 如果船只超过 10 秒没有更新
+				if (currentTime - lastUpdateTime > 10000) {
+					console.log(`ID: ${key} 已超过 10 秒未更新，删除该船及其标记`);
+
+					// 从 map 中删除该船的记录
+					shipsMap.delete(key);
+
+					// 从地图中删除该标记
+					map.removeLayer(shipMarker);
+				}
+			});
+		}, 1000); // 每秒检查一次
+
+
+
+
+
+
+
+
+let polylinePoints = [];
+    let polyline = null;
+    let tempLine = null; // 临时线条
+    let isDrawing = false;
+
+    const drawButton = document.getElementById('drawButton');
+
+    // 切换绘制模式
+    drawButton.addEventListener('click', () => {
+      if (!isDrawing) {
+        // 进入绘制模式
+        isDrawing = true;
+        drawButton.textContent = '结束绘制折线';
+        polylinePoints = []; // 清空点
+        if (polyline) {
+          map.removeLayer(polyline);
+          polyline = null; // 清理旧折线
+        }
+        if (!tempLine) {
+          tempLine = L.polyline([], { color: '#ff00ff', dashArray: '5,5', weight: 2   }).addTo(map); // 创建临时线条
+        }
+        document.getElementById('map').classList.add('drawing'); // 改变鼠标样式
+      } else {
+        // 退出绘制模式
+        isDrawing = false;
+        drawButton.textContent = '开始绘制折线';
+        if (tempLine) {
+          map.removeLayer(tempLine); // 移除临时线条
+          tempLine = null;
+        }
+        document.getElementById('map').classList.remove('drawing'); // 恢复鼠标样式
+		
+		// 绘制完成后打印格式化的polylinePoints
+		printFormattedPoints();
+      }
+    });
+
+
+
+	// 打印格式化的polylinePoints
+	function printFormattedPoints() {
+	  const pointCount = polylinePoints.length;
+	  const pointsString = polylinePoints
+		.map(point => `${point[1]},${point[0]}`) // 将纬度和经度格式化为 lon, lat
+		.join(',');  // 用逗号连接
+
+	  const formattedData = `$GP,${pointCount},${pointsString}`;
+	  socket_cmd.send(formattedData);
+	  console.log(formattedData);  // 打印格式化的结果
+	}
+	
+	
+	
+	
+	// 创建 WebSocket 连接
+	const socket_cmd = new WebSocket('ws://172.11.21.92:8282');  // 请根据实际情况修改 WebSocket 服务地址
+
+	// 连接打开时的回调
+	socket_cmd.onopen = () => {
+		console.log('已连接到 WebSocket 服务器');
+	};
+
+	// 连接关闭时的回调
+	socket_cmd.onclose = () => {
+		console.log('WebSocket 连接已关闭');
+	};
+
+	// 监听 WebSocket 消息
+	socket_cmd.onmessage = (event) => {
+		console.log('收到来自后台的消息：', event.data);
+	};
+
+
+
+	
+	
+
+    // 监听地图点击事件
+    map.on('click', (e) => {
+      if (isDrawing) {
+        const { lat, lng } = e.latlng;
+        polylinePoints.push([lat, lng]);
+
+        // 更新或创建正式折线
+        if (polyline) {
+          polyline.setLatLngs(polylinePoints);
+        } else {
+          polyline = L.polyline(polylinePoints, { color: '#ff00ff' , weight: 2  ,zIndex:11}).addTo(map);
+        }
+      }
+    });
+
+
+
+
+
+
+
+
+
+       // 获取显示经纬度的容器
+        const coordsDisplay = document.getElementById('coords');
+
+
+	// 监听鼠标移动事件
+        map.on('mousemove', function (e) {
+            const lat = e.latlng.lat.toFixed(5); // 纬度保留5位小数
+            const lng = e.latlng.lng.toFixed(5); // 经度保留5位小数
+            coordsDisplay.innerText = `经度: ${lng}, 纬度: ${lat}`;
+
+
+	if (isDrawing && polylinePoints.length > 0) {
+        const lastPoint = polylinePoints[polylinePoints.length - 1];
+        const mousePoint = [e.latlng.lat, e.latlng.lng];
+
+        // 更新临时线条的起点和终点
+        tempLine.setLatLngs([lastPoint, mousePoint]);
+      }
+
+        });
+
+
+
+
+        socket.onclose = () => {
+            console.log('Disconnected from WebSocket server');
+        };
+    </script>
+</body>
+</html>

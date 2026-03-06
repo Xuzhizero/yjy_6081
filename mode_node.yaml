@@ -1,0 +1,16 @@
+/mode_node:
+  ros__parameters:
+    LOS_parameters:
+    - 200.0
+    - 200.0
+    - 70.0
+    - 30.0
+    qos_overrides:
+      /parameter_events:
+        publisher:
+          depth: 1000
+          durability: volatile
+          history: keep_last
+          reliability: reliable
+    use_sim_time: false
+

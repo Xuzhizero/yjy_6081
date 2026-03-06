@@ -1,0 +1,15 @@
+# 更新系统包
+sudo apt update
+sudo apt install -y curl
+
+# 添加 NodeSource 仓库（这里以 Node.js 22 为例，可以改成 node_23.x 等）
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+
+# 安装 Node.js 和 npm
+sudo apt install -y nodejs
+
+# 检查版本
+node -v
+npm -v
+
+sudo npm install --global http-server

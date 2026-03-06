@@ -1,0 +1,68 @@
+# =============================================================
+# Ship 6081 全船系统 Git 白名单配置
+# 默认忽略所有文件，仅追踪白名单中的内容
+# =============================================================
+
+# 默认忽略一切
+*
+
+# ===== Git 管理文件 =====
+!.gitignore
+
+# ===== 启动脚本 =====
+!run.sh
+!run1.sh
+
+# ===== 参数配置文件 =====
+!controller_node.yaml
+!mode_node.yaml
+!sim.conf
+
+# ===== HaiTub (Node.js 后台服务) =====
+!HaiTub/
+!HaiTub/app.js
+!HaiTub/app1.js
+!HaiTub/app2.js
+!HaiTub/package.json
+!HaiTub/package-lock.json
+!HaiTub/GPATH.txt
+
+# ===== control_ws (ROS2 航控工作空间 - 仅源码) =====
+!control_ws/
+!control_ws/src/
+!control_ws/src/**
+
+# ===== module (进程管理 + 算法数据) =====
+!module/
+!module/launch.conf
+
+# pathplanning 地图数据 (A/B 组共享)
+!module/pathplanning/
+!module/pathplanning/data/
+!module/pathplanning/data/**
+!module/pathplanning/data_weather/
+!module/pathplanning/data_weather/**
+
+# ===== 20260112全信 (全船信息系统) =====
+!20260112全信/
+!20260112全信/*.py
+!20260112全信/*.yaml
+!20260112全信/*.json
+!20260112全信/*.para
+!20260112全信/audio/
+!20260112全信/audio/**
+# 排除备份文件
+20260112全信/ModifyAndDump\ -\ 副本.py
+
+# ===== PBF (瓦片地图服务配置) =====
+!PBF/
+!PBF/config.json
+
+# ===== configs (系统级配置镜像) =====
+!configs/
+!configs/**
+
+# ===== haituf_frontend (船舶信息系统前端) =====
+!haituf_frontend/
+!haituf_frontend/**
+haituf_frontend/node_modules/

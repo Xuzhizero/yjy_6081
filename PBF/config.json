@@ -1,0 +1,25 @@
+{
+  "options": {
+    "paths": {
+      "mbtiles": "."
+    }
+  },
+  "styles": {},
+  "data": {
+    "DEPARE": { "mbtiles": "DEPARE.mbtiles" },
+    "Land_area": { "mbtiles": "Land_area.mbtiles" },
+    "ISLAND_NAME": { "mbtiles": "ISLAND_NAME.mbtiles" },
+    "SOUNDG": { "mbtiles": "SOUNDG.mbtiles" },
+    "fairway": { "mbtiles": "fairway.mbtiles" },
+    "fairway_质心": { "mbtiles": "fairway_质心.mbtiles" },
+    "BUOYS": { "mbtiles": "BUOYS.mbtiles" },
+    "BOUND": { "mbtiles": "BOUND.mbtiles" },
+    "jianhua": { "mbtiles": "jianhua.mbtiles" },
+    "SeaArea": { "mbtiles": "SeaArea.mbtiles" },
+    "obstacles": { "mbtiles": "obstacles.mbtiles" },
+    "ALL_GEO": { "mbtiles": "ALL_GEO.mbtiles" },
+    "ALL_GEO_center": { "mbtiles": "ALL_GEO_center.mbtiles" }
+
+
+  }
+}

@@ -1,0 +1,11 @@
+    <svg
+      viewBox="0 0 32 32"
+      xmlns="http://www.w3.org/2000/svg"
+      width="4px"
+      height="4px"
+      fill="#fff"
+    >
+      <path
+        d="M 6 10 L 26 10 Q 27 10 26.5 11 L 17 27 Q 16.5 27.7 16 28 Q 15.5 27.7 15 27 L 5.5 11 Q 5 10 6 10 Z"
+      />
+    </svg>

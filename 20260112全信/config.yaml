@@ -1,0 +1,580 @@
+global_value: &host_ip 193.0.1.73
+
+udp:
+  channels:
+    - name: "Example"
+      enable: False
+      input_port: 10001
+      forward_rules:
+        - output_ip: 192.168.1.102
+          output_port: 20002
+          modify: "fusion_data_toredis"
+        - output_ip: 192.168.1.103
+          output_port: 20003
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+    - name: "融合雷达数据"
+      enable: True
+      input_port: 58553
+      forward_rules:
+        - modify: "fusion_data_toredis"
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+    - name: "全局路径"
+      enable: True
+      input_port: 58554
+      forward_rules:
+        - modify: "GPath_toredis"
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+    - name: "控制状态"
+      enable: True
+      input_port: 6634
+      forward_rules:
+        - modify: "NaviState_toredis"
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+    - name: "控制舵令"
+      enable: True
+      input_port: 6635
+      forward_rules:
+        - modify: "NaviDUO_CTRL"
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+    - name: "舵反馈"
+      enable: True
+      input_port: 5678
+      forward_rules:
+        - modify: "duo_fankuiX"
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+    - name: "6081舵反馈"
+      enable: True
+      input_port: 6006
+      forward_rules:
+        - modify: "duo_fankui6081"
+      HEX: False
+      file_save: true
+      max_file_size: 5242880
+    - name: "转速反馈"
+      enable: True
+      input_port: 6001
+      forward_rules:
+        - modify: "zhuansu_fankui_QJ"
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+    - name: "渔船融合雷达数据"
+      enable: True
+      input_port: 9090
+      forward_rules:
+        - modify: "yuchuan_Object_toredis"
+        - output_ip: 127.0.0.1
+          output_port: 16002
+        - modify: "yuchuan_Object_toUSV"
+          output_ip: *host_ip
+          output_port: 6002
+        - output_ip: *host_ip
+          output_port: 12312
+        - modify: "yuchuan_Object_toWebMap"
+          output_ip: *host_ip
+          # output_ip: 172.16.21.30
+          output_port: 20003
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+      continue: true
+    - name: "6081YJ_Radar"
+      enable: True
+      input_port: 33333
+      forward_rules:
+        - modify: "YJ6081_Object_toredis"
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+      continue: true
+    - name: "辽无二雷达数据"
+      enable: True
+      input_port: 9191
+      forward_rules:
+        - modify: "yuchuan_Object_toredis1"
+          output_ip: *host_ip
+          output_port: 20004
+        # - modify: "yuchuan_Object_toredis"
+        - output_ip: 127.0.0.1
+          output_port: 16002
+
+        - modify: "yuchuan_Object_toUSV"
+          output_ip: *host_ip
+          output_port: 6002
+        - output_ip: *host_ip
+          output_port: 12312
+        - modify: "yuchuan_Object_toWebMap"
+          output_ip: *host_ip
+          # output_ip: 172.16.21.30
+          output_port: 20003
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+      continue: true
+    - name: "辽无二变幻"
+      enable: True
+      input_port: 6444
+      forward_rules:
+#        - modify: "liaowuer_yuchuan_Object_toredis"
+#        - output_ip: 127.0.0.1
+#          output_port: 16002
+#        - modify: "yuchuan_Object_toUSV"
+#          output_ip: *host_ip
+#          output_port: 6002
+#        - output_ip: *host_ip
+#          output_port: 12312
+        - modify: "liaowuer_bianhuan"
+          output_ip: *host_ip
+          # output_ip: 172.16.21.30
+          output_port: 9191
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+      continue: true
+    - name: "gewo变幻"
+      enable: True
+      input_port: 6555
+      forward_rules:
+        - modify: "gewen_bianhuan"
+          output_ip: *host_ip
+          output_port: 9191
+      HEX: False
+      file_save: true
+      max_file_size: 5242880
+      continue: true
+    # - name: "辽无二雷达数据"
+    #   enable: True
+    #   input_port: 6444
+    #   forward_rules:
+    #     - modify: "liaowuer_yuchuan_Object_toredis"
+    #     - output_ip: 127.0.0.1
+    #       output_port: 16002
+    #     - modify: "yuchuan_Object_toUSV"
+    #       output_ip: *host_ip
+    #       output_port: 6002
+    #     - output_ip: *host_ip
+    #       output_port: 12312
+    #     - modify: "yuchuan_Object_toWebMap"
+    #       output_ip: *host_ip
+    #       # output_ip: 172.16.21.30
+    #       output_port: 20003
+    #   HEX: true
+    #   file_save: true
+    #   max_file_size: 5242880
+    #   continue: true
+    - name: "Course数据"
+      enable: False
+      input_port: 55555
+      forward_rules:
+        - modify: "Course_data_toredis"
+      HEX: false
+      file_save: true
+      max_file_size: 5242880
+    - name: "GPS数据"
+      enable: False
+      input_port: 44444
+      forward_rules:
+        - modify: "GPS_data_toredis"
+      HEX: false
+      file_save: true
+      max_file_size: 5242880
+#    - name: "duo_arduino_fankui"
+#      enable: True
+#      input_port: 6608
+#      forward_rules:
+#        - modify: "duo_arduino_fankui"
+#      HEX: true
+#      file_save: true
+#      max_file_size: 5242880
+
+    - name: "IMU数据"
+      enable: False
+# ETH8890 COM6704
+      input_port: 8890
+      forward_rules:
+        - modify: "IMU_fix"
+          output_ip: 193.0.1.65
+          output_port: 3000
+        - modify: "IMU_check_and_toredis"
+          output_ip: *host_ip
+          output_port: 6012
+        - modify: "IMU_fix"
+          output_ip: 193.0.1.66
+          output_port: 3000
+        - modify: "IMU_fix_USV"
+          output_ip: *host_ip
+          output_port: 7010
+        - modify: "IMU_check_and_toredis"
+          output_ip:  *host_ip
+          output_port: 16165
+        - output_ip: *host_ip
+          output_port: 12322
+#        - modify: "IMU_to大连雷达"
+#          output_ip: 193.0.1.89
+#          output_port: 3008
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+      continue: true
+    - name: "IMU数据UniStrong"
+      enable: True 
+      input_port: 8819
+      forward_rules:
+        - modify: "IMU_check_and_toredis_UniStrong_X"
+          output_ip: *host_ip
+          output_port: 6012
+        - output_ip: 193.0.1.65
+          output_port: 3000
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+      continue: true
+    - name: "IMU数据YYDH"
+      enable:  False 
+      input_port: 8819
+      forward_rules:
+        - modify: "IMU_check_and_toredis_YYDH"
+          output_ip: *host_ip
+          output_port: 6012
+        - output_ip: 193.0.1.65
+          output_port: 3000
+      HEX: true
+      file_save: true
+      max_file_size: 5242880
+      continue: true
+    - name: "6606数据(柴油机)"
+      enable: True
+      input_port: 6606
+      forward_rules:
+        - modify: "engine_6606"
+      HEX: false
+      file_save: true
+      max_file_size: 5242880
+    - name: "6607数据"
+      enable: True
+      input_port: 26607
+      forward_rules:
+        - modify: "E_6607"
+      HEX: false
+      file_save: true
+      max_file_size: 5242880
+    - name: "6605数据"
+      enable: True
+      input_port: 6605
+      forward_rules:
+        - modify: "duo_fankui"
+      HEX: false
+      file_save: true
+      max_file_size: 5242880
+    - name: "AIS_send"
+      enable: True
+      input_port: 6608
+      forward_rules:
+        - modify: "AIS_send"
+          output_ip: 193.0.1.65
+          output_port: 6165
+      HEX: false
+      file_save: true
+      max_file_size: 5242880
+    - name: "USV控制转发"
+      enable: false
+      input_port: 7111
+      forward_rules:
+        - modify: "USV控制转发"
+      HEX: True
+      file_save: true
+      max_file_size: 5242880
+    - name: "PLC_rudder_数据"
+      enable: True
+      input_port: 5858
+      forward_rules:
+        - modify: "五元组"
+        - modify: "ADzhuansu"
+        
+        - output_ip: 193.0.1.111
+          output_port: 5858
+      HEX: false
+      file_save: true
+      max_file_size: 5242880
+    # - name: "PLC_rudder_数据0"
+    #   enable: True
+    #   input_port: 5858
+    #   forward_rules:
+    #     - modify: "plc_rudder_feed"
+    #     - output_ip: 193.0.1.111
+    #       output_port: 5858
+    #   HEX: false
+    #   file_save: true
+    #   max_file_size: 5242880
+
+
+  Timers:
+    - name: "Example"
+      input_port: 10002
+      interval: 300
+      forward_rules:
+        - output_ip: 127.0.0.1
+          output_port: 6003
+          modify: "T_fusion_from_redis"
+        - output_ip: 192.168.1.103
+          output_port: 20003
+
+    - name: "IMU_to大连雷达"
+      input_port: 10103
+      interval: 1000
+      forward_rules:
+        - output_ip: 193.0.1.89
+          output_port: 3008
+          modify: "IMU_to大连雷达"
+    - name: "IMU_toSimradar"
+      input_port: 10113
+      interval: 1000
+      forward_rules:
+        - output_ip: 192.168.1.129
+          output_port: 9040
+          modify: "IMU_toSimradar"
+    - name: "IMU_toSimradar1"
+      input_port: 10123
+      interval: 1000
+      forward_rules:
+        - output_ip: 192.168.1.129
+          output_port: 9040
+          modify: "IMU_toSimradar1"
+    # - name: "IMU_todalian"
+    #   input_port: 11113
+    #   interval: 1000
+    #   forward_rules:
+    #     - output_ip: 193.0.1.88
+    #       output_port: 5305
+    #       modify: "IMU_toSimradar1"
+    # - name: "IMU_todalian1"
+    #   input_port: 11123
+    #   interval: 1000
+    #   forward_rules:
+    #     - output_ip: 193.0.1.88
+    #       output_port: 5306
+    #       modify: "IMU_toSimradar"
+
+    - name: "IMU_togewo"
+      input_port: 12213
+      interval: 50
+      forward_rules:
+        - output_ip: 193.0.1.72
+          output_port: 20842
+          modify: "IMU_toSimradar1"
+    - name: "IMU_togewo1"
+      input_port: 12223
+      interval: 50
+      forward_rules:
+        - output_ip: 193.0.1.72
+          output_port: 20842
+          modify: "IMU_toSimradar"
+
+    - name: "IMU_toSimradar"
+      input_port: 10104
+      interval: 1000
+      forward_rules:
+        - output_ip: 193.0.1.89
+          output_port: 3008
+          modify: "IMU_toSimradar"
+      
+    # - name: "fence_update"
+    #   input_port: 10105
+    #   interval: 1000
+    #   forward_rules:
+    #     - modify: "refresh_fence_loop"
+    #       output_ip: 193.0.1.89
+    #       output_port: 3009
+          
+    # - name: "IMU_toUSV"
+    #   input_port: 10113
+    #   interval: 500
+    #   forward_rules:
+    #     - output_ip: *host_ip
+    #       output_port: 7010
+    #       modify: "IMU_toUSV"
+
+    # - name: "IMU_toBDFPDL"
+    #   input_port: 10115
+    #   interval: 100
+    #   forward_rules:
+    #     - output_ip: 193.0.1.65
+    #       output_port: 3000
+    #       modify: "IMU_toBDFPDL"
+
+        # - output_ip: 193.0.1.66
+        #   output_port: 3000
+        #   modify: "IMU_toBDFPDL"
+        # - output_ip: *host_ip
+        #   output_port: 12322
+        #   modify: "IMU_toBDFPDL"
+
+
+
+
+    - name: "fusion_from_redis"
+      input_port: 10003
+      interval: 2000
+      forward_rules:
+        - output_ip: *host_ip
+          output_port: 6003
+          modify: "T_fusion_from_redis"
+    - name: "IMU_from_redis"
+      input_port: 10004
+      interval: 2000
+      forward_rules:
+        - output_ip: *host_ip
+          output_port: 16012
+          modify: "IMU_from_redis"
+
+    - name: "query6605"
+      input_port: 16605
+      interval: 100
+      forward_rules:
+        - modify: "query6605"
+          output_ip: 193.0.1.89
+          output_port: 3005
+    # - name: "query6606"
+    #   input_port: 16606
+    #   interval: 100
+    #   forward_rules:
+    #     - modify: "query6606"
+    #       output_ip: 193.0.1.88
+    #       output_port: 3006
+    - name: "query6607"
+      input_port: 16607
+      interval: 300
+      forward_rules:
+        - modify: "query6607"
+          # output_ip: 193.0.1.65
+          # output_port: 3007
+    # - name: "PathSend"
+    #   input_port: 16016
+    #   interval: 1000
+    #   forward_rules:
+    #     # - modify: "PathSend"
+    #     - modify: "new_PathSend_to_show"
+    #       output_ip: *host_ip
+    #       output_port: 6016
+    #     # - modify: "PathSend"
+    #     - modify: "new_PathSend"
+    #       output_ip: 193.0.1.66
+    #       output_port: 8080
+    # - name: "gpath_from_redis"
+    #   input_port: 19090
+    #   interval: 1000
+    #   forward_rules:
+    #     - output_ip: *host_ip
+    #       output_port: 12324
+    #       modify: "gp_from_redis"
+    # - name: "lpath_from_redis"
+    #   input_port: 12325
+    #   interval: 1000
+    #   forward_rules:
+    #     - output_ip: *host_ip
+    #       output_port: 12326
+    #       modify: "lp_from_redis"
+    # - name: "lp_calc_time"
+    #   input_port: 12326
+    #   interval: 1000
+    #   forward_rules:
+    #     - modify: "lp_calc_time"
+    
+#    - name: "query6608"
+#      input_port: 16608
+#      interval: 200
+#      forward_rules:
+#        - modify: "query6608_1"
+#          output_ip: 193.0.1.89
+#          output_port: 3008
+
+    - name: "DataToUI"
+      input_port: 10005
+      interval: 300
+      forward_rules:
+        - modify: "DataToUI"
+          output_ip: 127.0.0.1
+          output_port: 16161
+    - name: "DataToUI_control"
+      input_port: 10008
+      interval: 300
+      forward_rules:
+        - modify: "DataToUI_control"
+          output_ip: 127.0.0.1
+          output_port: 16163
+    - name: "PLC_DuoCTRL"
+      input_port: 10009
+      interval: 200
+      forward_rules:
+        - modify: "PLC_DuoCTRL"
+          output_ip: 193.0.1.99
+          output_port: 8500
+    # - name: "DuoCTRL6081_"
+    #   input_port: 10019
+    #   interval: 500
+    #   forward_rules:
+    #     - modify: "DuoCTRL6081_"
+    #       output_ip: 193.0.1.88
+    #       output_port: 3000
+    - name: "zhuansuCTRL6081_"
+      input_port: 10029
+      interval: 500
+      forward_rules:
+        - modify: "zhuansuCTRL6081_"
+          output_ip: 193.0.1.70
+          output_port: 7000
+    - name: "PLC_zhuan_suCTRL"
+      input_port: 10010
+      interval: 1000
+      forward_rules:
+        - modify: "PLC_ADzhuan_suCTRL"
+          output_ip: 193.0.1.98
+          output_port: 8500
+
+
+
+#    - name: "DuoCTRL"
+#      input_port: 10006
+#      interval: 100
+#      forward_rules:
+#        - modify: "DuoCTRL"
+#    - name: "ArduinoDuoCTRL"
+#      input_port: 10009
+#      interval: 100
+#      forward_rules:
+#        - modify: "ArduinoDuoCTRL"
+#          output_ip: 193.0.1.89
+#          output_port: 3008
+#    - name: "rudder_ctrl"
+#      input_port: 10006
+#      interval: 100
+#      forward_rules:
+#        - modify: "rudder_ctrl"
+
+
+mysql:
+  host: "localhost"
+  user: "root"
+  password: "password"
+  database: "shipdata"
+  tables:
+    - name: "data_table"
+      columns: ["timestamp", "data"]
+
+
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0

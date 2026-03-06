@@ -1,0 +1,2837 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Leaflet + Element UI Layout</title>
+	<!-- <link rel="stylesheet" href="index.css">
+	<script src="index.js"></script> -->
+
+	<script src="vue.min.js"></script>
+
+	<!-- 引入 Element UI CSS -->
+	<link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+
+	<!-- 引入 Element UI JS -->
+	<script src="element-ui/lib/index.js"></script>
+
+
+	<!-- <script src="https://unpkg.com/element-plus"></script> -->
+	<script src="maplibre_dist/maplibre-gl.js"></script>
+	<link rel="stylesheet" href="maplibre_dist/maplibre-gl.css" />
+	<link rel="stylesheet" href="1_shilliang.css">
+	<!-- <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script> -->
+</head>
+
+<body>
+	<div id="app">
+		<el-container style="height: 99vh;">
+			<el-header height="88px" class="header">
+				<div class="left">
+					<img src="symbol/logo.png" alt="logo" style="height: 88px;">
+					<div class="title">
+						<h3>智能辅助驾驶系统</h3>
+						<p>Intelligent Advanced Driver Assistance System</p>
+					</div>
+				</div>
+				<div class="right"></div>
+			</el-header>
+			<el-container>
+				<!-- 左侧区域：动态显示 Leaflet 地图 -->
+				<el-aside width="100%">
+					<div id="map" style="height: 100%; position: relative;">
+					<!-- 控件：悬浮在 Leaflet 地图右上角 -->
+					<div id="controls" :style="controlsStyle">
+						<el-checkbox v-model="showTabs" label="Toggle Sidebar">全屏显示</el-checkbox>
+						<el-checkbox v-model="isBiPeng" @change="handleBiPengChange">局部避碰</el-checkbox>
+					</div>
+					<!-- 右侧区域：20% 显示 Tabs -->
+					<div class="right-main" :style="{display: showTabs ? 'none' :'block' ,padding: '0'}">
+						<el-card class="box-card">
+							<!-- <div slot="header" class="clearfix">
+							<span>航行配置</span>
+							@change="updateSelected"  @click.stop="deleteCity(item)"
+						</div>-->
+							<div class="speed">
+								<div class="speed_title">航行速度</div>
+								<div class="speed_title">航行模式状态</div>
+							</div>
+							全局路径绘制:
+							<div class="bordered-container">
+								<button class="custom-button" id="drawButton" @click="toggleDrawingMode">{{ isDrawing ?
+									'结束编辑' :
+									'编辑航线' }}</button>
+								<button class="custom-button" id="drawButton" @click="saveGpath">保存航线</button>
+
+								<el-select v-model="selectedPath" placeholder="" @change="updateSelected" size="small"
+									style="width:70px; font-size: 12px;">
+									<el-option v-for="item in History_Path" :key="item.value" :label="item.label"
+										:value="item.value">
+										<span style="float: left">{{ item.label }}</span>
+										<!-- <span style="float: right; color: #8492a6; font-size: 13px">{{ item.value }}</span> -->
+										<!-- <el-button type="text" style="margin-left: 10px; color: red;"  @click.stop="confirmDelete(item)"  >
+		删除
+	</el-button> -->
+									</el-option>
+								</el-select>
+
+
+							</div>
+
+
+
+							<div class="bordered-container">电子围栏绘制:
+								<button class="custom-button" id="poly_drawButton" @click="poly_toggleDrawingMode">{{
+									fences_isDrawing ? '结束编辑' : '编辑围栏' }}</button>
+							</div>
+
+							<div class="bordered-container">驾驶模式:
+								<el-radio-group v-model="radio" @change="handleCheckboxChange">
+									<el-radio label="0">手动</el-radio>
+									<el-radio label="1">自动</el-radio>
+
+								</el-radio-group>
+								<!-- 选择自动时显示勾选框 -->
+								<div v-if="radio === '1'">
+									<el-checkbox v-model="autoSteering" @change="handleautoteerChange">自动舵</el-checkbox>
+
+								</div>
+							</div>
+
+							<div class="bordered-container">车钟转速:
+								<el-radio-group v-model="zhuan_su" @change="handleSuDuChange">
+									<el-radio label="0">停</el-radio>
+									<el-radio label="1">450</el-radio>
+									<el-radio label="2">650</el-radio>
+									<el-radio label="3">850</el-radio>
+
+								</el-radio-group>
+							</div>
+
+							<div class="bordered-container">
+								<el-checkbox v-model="showTrack" label="Toggle Sidebar">显示轨迹线</el-checkbox>
+								<button class="custom-button" id="clearButton" @click="clearTrack">清空轨迹</button>
+							</div>
+
+							<div class="bordered-container">
+								<el-checkbox v-model="showStatus" label="Toggle Sidebar">显示状态</el-checkbox>
+								<el-checkbox v-model="isCenter" label="Toggle Sidebar">视角锁定</el-checkbox>
+								<el-checkbox v-model="isNorthUp" label="Toggle Sidebar">北向上</el-checkbox>
+							</div>
+
+
+
+						</el-card>
+
+
+
+
+
+						<el-card class="box-card">
+							<!-- <div slot="header" class="clearfix">
+			 <span>数据</span>
+			</div>-->
+
+
+
+							<el-row :gutter="10" justify="start" align="middle">
+								<!-- 经度 -->
+								<el-col :span="12" class="label-column" style="margin-bottom: 10px;">
+									<div class="data-container">
+										<div class="data-item">
+											<div class="data-label">经度</div>
+											<div class="data-value">{{ toDMS(myloc.mylon) }}</div>
+											<div class="data-unit">°</div>
+										</div>
+									</div>
+
+								</el-col>
+								<el-col :span="12" class="value-column" style="margin-bottom: 10px;">
+									<div class="data-container">
+										<div class="data-item">
+											<div class="data-label">纬度</div>
+											<div class="data-value">{{ toDMS(myloc.mylat) }}</div>
+											<div class="data-unit">°</div>
+										</div>
+									</div>
+								</el-col>
+								<el-col :span="12" class="label-column" style="margin-bottom: 10px;">
+									<div class="data-container">
+										<div class="data-item">
+											<div class="data-label">速度</div>
+											<div class="data-value">{{ myloc.speed }}</div>
+											<div class="data-unit">m/s</div>
+										</div>
+									</div>
+
+								</el-col>
+								<el-col :span="12" class="value-column" style="margin-bottom: 10px;">
+									<div class="data-container">
+										<div class="data-item">
+											<div class="data-label">速度方向</div>
+											<div class="data-value">{{ myloc.speed_direction }}</div>
+											<div class="data-unit">°</div>
+										</div>
+									</div>
+								</el-col>
+
+								<el-col :span="12" class="label-column" style="margin-bottom: 10px;">
+									<div class="data-container">
+										<div class="data-item">
+											<div class="data-label">艏向</div>
+											<div class="data-value">{{ myloc.head_direction }}</div>
+											<div class="data-unit">°</div>
+										</div>
+									</div>
+
+								</el-col>
+								<el-col :span="12" class="value-column" style="margin-bottom: 10px;">
+									<div class="data-container">
+										<div class="data-item">
+											<div class="data-label">高度</div>
+											<div class="data-value">{{ myloc.height }}</div>
+											<div class="data-unit">m</div>
+										</div>
+									</div>
+								</el-col>
+								<!--
+  
+  <el-col :span="12" class="label-column">
+    <el-tag type="success">纬度:</el-tag>
+  </el-col>
+  <el-col :span="16" class="value-column">
+    <el-card class="value-card">
+      <span>{{ myloc.mylat }}</span>
+    </el-card>
+  </el-col>
+
+ 
+  <el-col :span="8" class="label-column">
+    <el-tag type="success">速度:</el-tag>
+  </el-col>
+  <el-col :span="16" class="value-column">
+    <el-card class="value-card">
+      <span>{{ myloc.speed }} m/s</span>
+    </el-card>
+  </el-col>
+
+
+  <el-col :span="8" class="label-column">
+    <el-tag type="success">速度方向:</el-tag>
+  </el-col>
+  <el-col :span="16" class="value-column">
+    <el-card class="value-card">
+      <span>{{ myloc.speed_direction }}</span>
+    </el-card>
+  </el-col>
+  
+   
+  <el-col :span="8" class="label-column">
+    <el-tag type="success">艏向:</el-tag>
+  </el-col>
+  <el-col :span="16" class="value-column">
+    <el-card class="value-card">
+      <span>{{ myloc.head_direction  }}</span>
+    </el-card>
+  </el-col>
+
+
+  <el-col :span="8" class="label-column">
+    <el-tag type="success">高度:</el-tag>
+  </el-col>
+  <el-col :span="16" class="value-column">
+    <el-card class="value-card">
+      <span>{{ myloc.height }} m</span>
+    </el-card>
+  </el-col>
+  -->
+								<!-- 鼠标悬停 
+  <el-col :span="8" class="label-column">
+    <el-tag type="success">鼠标悬停:</el-tag>
+  </el-col>
+  <el-col :span="16" class="value-column">
+    <el-card class="value-card">
+	  <span>{{ coordsDisplay }}</span>
+
+    </el-card>
+  </el-col>
+  -->
+
+								<!-- 全局路径 
+  <el-col :span="8" class="label-column">
+    <el-tag type="success">XX:</el-tag>
+  </el-col>
+  <el-col :span="16" class="value-column">
+    <el-card class="value-card">
+	  <span>{{Path.GPath }}</span>
+
+    </el-card>
+  </el-col>
+  -->
+
+							</el-row>
+
+
+						</el-card>
+
+
+						<!--
+		  <el-card class="box-card">
+		   <img src="公司.png" alt="示例图片" class="card-img">
+		  
+		  </el-card>
+		    -->
+						<el-card class="box-card">
+							<div class="status-container">
+								<div v-for="(status, key) in systems" :key="key" class="status-indicator">
+									<div :class="['light', status ? 'green' : 'red']"></div>
+									<p>{{ key }}</p>
+									<!--<button class="toggle-btn" @click="toggleStatus(key)">切换</button>-->
+								</div>
+							</div>
+
+						</el-card>
+
+
+						<el-card class="box-card">
+							<img src="公司.png" alt="示例图片" class="card-img">
+
+						</el-card>
+
+
+
+
+					</div>
+				</el-aside>
+
+
+			</el-container>
+		</el-container>
+	</div>
+	<style>
+		html,
+		body {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		.header {
+			height: 88px;
+			background: url('symbol/header-bg.png');
+		}
+
+		.data-container {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			/* 缩小间距 */
+		}
+
+		.data-item {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			background-color: #fff;
+			padding: 10px;
+			/* 缩小内边距 */
+			border-radius: 6px;
+			/* 更小的圆角 */
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			/* 减小阴影 */
+			width: 100px;
+			/* 更小的宽度 */
+		}
+
+		.data-label {
+			font-size: 14px;
+			/* 减小字体 */
+			color: #555;
+			margin-bottom: 8px;
+			/* 缩小名称与数值之间的间距 */
+		}
+
+		.data-value {
+			font-size: 18px;
+			/* 减小数值字体 */
+			font-weight: bold;
+			color: #333;
+			margin-bottom: 4px;
+			/* 缩小数值与单位之间的间距 */
+		}
+
+		.data-unit {
+			font-size: 12px;
+			/* 更小的单位字体 */
+			color: #888;
+		}
+	</style>
+
+	<style>
+		.box-card {
+			padding: 10px;
+			/* 设置内上边距为10px，可以根据需要调整 */
+		}
+
+		.bordered-container {
+			padding: 10px 20px;
+			border: 2px solid #4CAF50;
+			/* 绿色边框 */
+			border-radius: 8px;
+			/* 圆角 */
+			background-color: #f9f9f9;
+			/* 背景色 */
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			/* 阴影 */
+			margin: 10px 0;
+			/* 外边距 */
+		}
+	</style>
+	<!--指示灯 -->
+	<style>
+		.status-container {
+			display: flex;
+			justify-content: center;
+			/* 水平居中 */
+			align-items: center;
+			/* 垂直居中 */
+			flex-wrap: wrap;
+			/* 如果元素过多，自动换行 */
+			gap: 30px;
+			/* 元素间距 */
+			height: 100%;
+			/* 让容器填充满父级 */
+		}
+
+
+
+		.status-indicator {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+		}
+
+		.light {
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			/* 圆形 */
+			border: 3px solid rgba(255, 255, 255, 0.5);
+			/* 半透明白色边框 */
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+			/* 添加阴影增加层次感 */
+			position: relative;
+		}
+
+		.green {
+			background: radial-gradient(circle, #4CAF50 30%, #2E7D32 70%);
+			box-shadow: 0 0 8px #4CAF50;
+			/* 绿色发光效果 */
+		}
+
+		.red {
+			background: radial-gradient(circle, #F44336 30%, #B71C1C 70%);
+			box-shadow: 0 0 8px #F44336;
+			/* 红色发光效果 */
+		}
+
+		/* 额外增加一个高光效果 */
+		.light::after {
+			content: "";
+			position: absolute;
+			top: 4px;
+			left: 4px;
+			width: 8px;
+			height: 8px;
+			background: rgba(255, 255, 255, 0.7);
+			border-radius: 50%;
+			opacity: 0.8;
+		}
+
+
+		.toggle-btn {
+			padding: 5px 10px;
+			cursor: pointer;
+			font-size: 12px;
+			border: none;
+			background-color: #007bff;
+			color: white;
+			border-radius: 5px;
+		}
+	</style>
+
+	<!-- 工具函数 -->
+	<script>
+		// 创建自定义SVG图标
+		var iconUrl = '本船.svg';  // 替换为你本地的SVG文件路径
+
+		function createIcon(rotation = 0, iconUrl = '本船.svg') {
+			return L.divIcon({
+				className: 'custom-icon',
+				html: `<img src="${iconUrl}" style="transform: rotate(${rotation}deg); width: 12px; height: 30px;" />`,
+				iconSize: [12, 30],  // 图标大小
+				iconAnchor: [6, 15],  // 锚点位置
+				popupAnchor: [0, -15]  // 弹窗位置
+			});
+		}
+		function createIcon_ziji(rotation = 0, iconUrl = '自己船.svg') {
+			return L.divIcon({
+				className: 'custom-icon',
+				html: `<img src="${iconUrl}" style="transform: rotate(${rotation}deg); width: 80px; height: 80px;" />`,
+				iconSize: [80, 80],  // 图标大小
+				iconAnchor: [40, 40],  // 锚点位置
+				popupAnchor: [0, -15]  // 弹窗位置
+			});
+		}
+
+	</script>
+
+	<!-- 全局变量 -->
+	<script>
+		var mylon = 0;
+		var mylat = 0;
+		// 初始化一些其他参数
+		var speed = 30; // 假设速度是30km/h
+		var direction = "北"; // 假设方向是北
+		var size = 10; // 假设船的大小是10米
+
+
+		var myloc = {
+			mylon: 0,    // 经度
+			mylat: 0,    // 纬度
+			speed: 0, // 速度
+			height: 0,
+			head_direction: 0,
+			speed_direction: 0,
+		};
+
+
+		map = Vue.prototype.$map
+
+		var previousGPath = "";
+		var previousLPath = "";
+
+
+		var Path = {
+			GPath: "",    // 经度
+			LPath: "",    // 纬度
+
+		};
+
+	</script>
+
+
+
+
+
+	<!-- 引入 axios -->
+	<script src="axios.min.js"></script>
+
+	<script src="socket.io.min.js"></script>
+	<!-- 布局绘制 -->
+	<script>
+
+		var iconUrl = '本船.svg';  // 替换为你本地的SVG文件路径
+
+		function createIcon(rotation = 0, iconUrl = '本船.svg') {
+			return L.divIcon({
+				className: 'custom-icon',
+				html: `<img src="${iconUrl}" style="transform: rotate(${rotation}deg); width: 12px; height: 30px;" />`,
+				iconSize: [12, 30],  // 图标大小
+				iconAnchor: [6, 15],  // 锚点位置
+				popupAnchor: [0, -15]  // 弹窗位置
+			});
+		}
+		function createIcon_ziji(rotation = 0, iconUrl = '自己船.svg') {
+			return L.divIcon({
+				className: 'custom-icon',
+				html: `<img src="${iconUrl}" style="transform: rotate(${rotation}deg); width: 80px; height: 80px;" />`,
+				iconSize: [80, 80],  // 图标大小
+				iconAnchor: [40, 40],  // 锚点位置
+				popupAnchor: [0, -15]  // 弹窗位置
+			});
+		}
+
+
+
+		new Vue({
+			el: '#app',
+			data() {
+				return {
+					selectedTargets: null,
+					autoSteering: false,  // 自动舵勾选框的状态
+					selectedPath: "",
+					History_Path: [
+						{ value: 'bj', label: '北京' },
+						{ value: 'sh', label: '上海' }
+					], // 城市列表
+					path_markers: [], // 存储标记对象
+					systems: {
+						GPS: true,
+						雷达: true,
+						动力: true,
+						电力: true
+					},
+
+					serverIp: "122.224.243.126", // 这里改成你的 IP
+					checkboxStatus: false,
+					radio: '1',
+					zhuan_su: '0',
+					isBiPeng: true,
+					showTabs: false,  // 控制 Tabs 显示和隐藏
+					showStatus: true,
+					isCenter: false,
+					isNorthUp: true,
+					map: null,  // 保存地图实例
+					mylon: mylon,
+					mylat: mylat,
+					location: {
+						mylon: mylon,    // 经度
+						mylat: mylat,    // 纬度
+						speed: speed, // 速度
+						previousGPath: previousGPath,
+					},
+					Path: Path,
+					myloc: myloc,
+					coordsDisplay: '',  // 用来显示坐标的文本
+
+					shipsMap: new Map(),
+
+					isDrawing: false,  // 标记是否处于绘制模式
+					fences_isDrawing: false,  // 标记是否处于绘制模式
+
+					polylinePoints: [],  // 存储绘制折线的点
+					fences_polylinePoints: [],  // 存储绘制折线的点
+
+					tempLine: null,  // 临时线条
+					fences_tempLine: null,  // 临时线条
+
+					polyline: null,  // 绘制完成的折线
+					fences_polyline: null,  // 绘制完成的折线
+
+					Lpath_polyline: null,
+					status_Socket: null, // 状态WebSocket 连接
+					cmd_Socket: null, // 指令WebSocket 连接
+					radar_Socket: null, // 目标船WebSocket连接
+
+
+					shipMarker: null,
+					rotation: 0,  // 控制旋转角度
+					iconUrl: '自己船.svg',  // 默认的图标路径
+
+					track: [],
+					showTrack: true,  // 控制轨迹线显示
+					line: null,  // 轨迹线对象
+					count: 0,
+					trackGroup: null,
+
+					interval_check: null,      // 检查定时器
+				};
+			},
+
+			created() {
+				this.loadPaths();
+				this.loadCheckboxStatus();
+				this.loadSuduStatus();
+				this.loadBiPengStatus();
+				// 在 Vue 实例创建时连接到 Socket.IO 服务器  `http://${this.serverIp}
+				this.socket = io(`http://${this.serverIp}:3030`); // 连接到你的服务器
+
+				// 监听服务器发送的 'checkbox-status-changed' 事件
+				this.socket.on('checkbox-status-changed', (status) => {
+					console.log('同步 接收到新的状态:', status);
+					this.radio = status;  // 更新状态
+
+
+
+				});
+
+				// 监听服务器发送的 'checkbox-status-changed' 事件
+				this.socket.on('Sudu-status-changed', (status) => {
+					console.log('同步 接收到新的状态:', status);
+					this.zhuan_su = status;  // 更新状态
+
+
+
+				});
+
+
+				// 监听服务器发送的 'BiPeng-status-changed' 事件
+				this.socket.on('BiPeng-status-changed', (status) => {
+					console.log('同步 接收到新的状态:', status);
+					this.isBiPeng = status;  // 更新状态
+
+
+
+				});
+
+
+
+				// this.$socket.on('checkbox-status-changed', (newStatus) => {
+				// this.checkboxStatus = newStatus;
+				//});
+
+			},
+			methods: {
+
+				toDMS(value) {
+					if (value === null || value === undefined) return "--";
+
+					const absVal = Math.abs(value);
+					const degrees = Math.floor(absVal);
+					const minutesFull = (absVal - degrees) * 60;
+					const minutes = Math.floor(minutesFull);
+					const seconds = Math.floor((minutesFull - minutes) * 60);
+
+					// 格式化
+					const degStr = degrees.toString().padStart(3, " ");  // 度：空格占位 3位
+					const minStr = minutes.toString().padStart(2, "0");  // 分：0占位 2位
+					const secStr = seconds.toString().padStart(2, "0");  // 秒：0占位 2位
+
+					const sign = value >= 0 ? "" : "-";
+					return `${sign}${degStr}°${minStr}'${secStr}"`;
+				},
+
+				// 刷新本船和速度方向
+				async refreshOwnShip() {
+					// 更新 own_ship 图层
+					const ownShipSource = this.map.getSource("own_ship");
+					if (ownShipSource) {
+						const ownShipData = {
+							type: "FeatureCollection",
+							features: [
+								{
+									type: "Feature",
+									geometry: {
+										type: "Point",
+										coordinates: [this.myloc.mylon, this.myloc.mylat], // 当前坐标
+									},
+									properties: {
+										bearing: Number(this.myloc.head_direction), // 当前航向
+									},
+								},
+							],
+						};
+						console.log("更新 bearing:", Number(this.myloc.head_direction));
+						ownShipSource.setData(ownShipData);
+					}
+
+					// 更新 own_ship_speed 图层
+					const speedSource = this.map.getSource("own_ship_speed");
+					if (speedSource) {
+						const speedData = {
+							type: "FeatureCollection",
+							features: [
+								{
+									type: "Feature",
+									geometry: {
+										type: "Point",
+										coordinates: [this.myloc.mylon, this.myloc.mylat], // 如果速度方向也在船位置
+									},
+									properties: {
+										bearing: Number(this.myloc.speed_direction), // 当前速度方向
+									},
+								},
+							],
+						};
+						speedSource.setData(speedData);
+					}
+				},
+				async init_ownship() {
+
+					this.map.addSource("own_ship", {
+						type: "geojson",
+						data: {
+							type: "FeatureCollection",
+							features: [
+								{
+									type: "Feature",
+									geometry: { type: "Point", coordinates: [this.myloc.mylon, this.myloc.mylat] },
+									properties: { bearing: this.myloc.head_direction },
+								},
+							],
+						},
+					});
+
+					this.map.addLayer({
+						id: "ship-layer",
+						type: "symbol",
+						source: "own_ship",
+						layout: {
+							"icon-image": "own_head.png",   // 内置或自定义图标
+							"icon-rotation-alignment": "map", // 按地图方向旋转
+							"icon-rotate": ["get", "bearing"], // 从属性读取旋转角度
+							"icon-size": 0.3,
+							"icon-anchor": "center",             // ✅ 锚点在中心
+							"icon-allow-overlap": true,     // 允许图标与其他图标重叠
+							"icon-ignore-placement": true,  // 忽略碰撞检测，不被挤掉
+						},
+					});
+
+
+
+					this.map.addSource("own_ship_speed", {
+						type: "geojson",
+						data: {
+							type: "FeatureCollection",
+							features: [
+								{
+									type: "Feature",
+									geometry: { type: "Point", coordinates: [this.myloc.mylon, this.myloc.mylat] },
+									properties: { bearing: this.myloc.speed_direction },
+								},
+							],
+						},
+					});
+
+					this.map.addLayer({
+						id: "ship-layer-speed",
+						type: "symbol",
+						source: "own_ship_speed",
+						layout: {
+							"icon-image": "own_speed.png",   // 内置或自定义图标
+							"icon-rotation-alignment": "map", // 按地图方向旋转
+							"icon-rotate": ["get", "bearing"], // 从属性读取旋转角度
+							"icon-size": 0.3,
+							"icon-anchor": "center",             // ✅ 锚点在中心
+							"icon-allow-overlap": true,     // 允许图标与其他图标重叠
+							"icon-ignore-placement": true,  // 忽略碰撞检测，不被挤掉
+						},
+					});
+
+				},
+				async load_DEPARE() {
+					// 先添加数据源
+					this.map.addSource('DEPARE-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/DEPARE/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+					// 定义每个 source-layer 对应的 zoom 范围
+					const layers = [
+						{ id: 'DEPARE_1', minzoom: 0, maxzoom: 2 },
+						{ id: 'DEPARE_2', minzoom: 2, maxzoom: 5 },
+						{ id: 'DEPARE_3', minzoom: 5, maxzoom: 7 },
+						{ id: 'DEPARE_4', minzoom: 7, maxzoom: 9 },
+						{ id: 'DEPARE_5', minzoom: 9, maxzoom: 15 },
+						{ id: 'DEPARE_6', minzoom: 15, maxzoom: 18 }
+					];
+
+
+					// 遍历添加图层
+					layers.forEach(layer => {
+						// 填充层
+						this.map.addLayer({
+							id: `${layer.id}-fill`,
+							type: 'fill',
+							source: 'DEPARE-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+							paint: {
+								'fill-color': [
+									'case',
+									['<=', ['get', 'DRVAL1'], -10], '#F0E68C',
+									['<=', ['get', 'DRVAL1'], -5], '#8FBF93',
+									['<=', ['get', 'DRVAL1'], 0], '#81C3E2',
+									['<=', ['get', 'DRVAL1'], 2], '#81C3E2',
+									['<=', ['get', 'DRVAL1'], 10], '#A7E0E9',
+									['<=', ['get', 'DRVAL1'], 20], '#B6EBDB',
+									'#D8F4E1'
+								],
+								'fill-opacity': 1
+							}
+						});
+
+
+
+
+					});
+				},
+				async loadSound() {
+					// 先添加数据源
+					this.map.addSource('Sound-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/SOUNDG/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+					// 定义每个 source-layer 对应的 zoom 范围
+					const layers = [
+						{ id: 'SOUNDG_1', minzoom: 0, maxzoom: 4 },
+						{ id: 'SOUNDG_2', minzoom: 4, maxzoom: 7 },
+						{ id: 'SOUNDG_3', minzoom: 7, maxzoom: 10 },
+						{ id: 'SOUNDG_4', minzoom: 10, maxzoom: 12 },
+						{ id: 'SOUNDG_5', minzoom: 12, maxzoom: 14 },
+						{ id: 'SOUNDG_6', minzoom: 14, maxzoom: 24 }
+					];
+					// 1: { minzoom: 0, maxzoom: 4 },
+					// 2: { minzoom: 4, maxzoom: 7 },
+					// 3: { minzoom: 7, maxzoom: 10 },
+					// 4: { minzoom: 10, maxzoom: 12 },
+					// 5: { minzoom: 12, maxzoom: 14 },
+					// 6: { minzoom: 14, maxzoom: 24 }
+
+					// 遍历添加图层
+					layers.forEach(layer => {
+
+
+
+
+						// 填充层
+						this.map.addLayer({
+							id: `${layer.id}-fill`,
+							type: 'symbol',
+							source: 'Sound-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+							layout: {
+								'text-field': ['get', 'depth'],  // 显示水深值
+								'text-size': 10,
+								'text-font': ['Noto Sans Regular'],  // 字体可自定义
+								'text-offset': [0, 0],
+								'text-anchor': 'center',
+								'text-padding': 10                  // 增大碰撞体积（默认是 2）
+							},
+							paint: {
+								'text-color': '#808080',  // 水深数字的颜色
+								'text-halo-color': '#ffffff',
+								'text-halo-width': 0
+							}
+						});
+
+
+					});
+				},
+				async load_Land() {
+					// 先添加数据源
+					this.map.addSource('Land_area-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/Land_area/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+					// 定义每个 source-layer 对应的 zoom 范围
+					const Land_area_layers = [
+						{ id: 'Land_area_1', minzoom: 0, maxzoom: 2 },
+						{ id: 'Land_area_2', minzoom: 2, maxzoom: 5 },
+						{ id: 'Land_area_3', minzoom: 5, maxzoom: 7 },
+						{ id: 'Land_area_4', minzoom: 7, maxzoom: 9 },
+						{ id: 'Land_area_5', minzoom: 9, maxzoom: 15 },
+						{ id: 'Land_area_6', minzoom: 15, maxzoom: 18 }
+					];
+
+
+					// 遍历添加图层
+					Land_area_layers.forEach(layer => {
+						// 填充层
+						this.map.addLayer({
+							id: `${layer.id}-fill`,
+							type: 'fill',
+							source: 'Land_area-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+							paint: {
+								'fill-color': '#CCC57B',
+								'fill-opacity': 1
+							}
+						});
+
+						// // 边界线层
+						this.map.addLayer({
+							id: `${layer.id}-line`,
+							type: 'line',
+							source: 'Land_area-vector',
+							'source-layer': layer.id,
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+							paint: {
+								'line-color': '#000',
+								'line-width': 1
+							}
+						});
+					});
+
+				},
+				async loadISLAND_NAME() {
+					// 先添加数据源
+					this.map.addSource('ISLAND_NAME-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/ISLAND_NAME/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+					// 定义每个 source-layer 对应的 zoom 范围
+					const layers = [
+						{ id: 'island_names_1', minzoom: 0, maxzoom: 2 },
+						{ id: 'island_names_2', minzoom: 2, maxzoom: 5 },
+						{ id: 'island_names_3', minzoom: 5, maxzoom: 7 },
+						{ id: 'island_names_4', minzoom: 7, maxzoom: 9 },
+						{ id: 'island_names_5', minzoom: 9, maxzoom: 15 },
+						{ id: 'island_names_6', minzoom: 15, maxzoom: 18 }
+					];
+
+
+					// 遍历添加图层
+					layers.forEach(layer => {
+
+						this.map.addLayer({
+							id: `${layer.id}-fill`,
+							type: "symbol",
+							source: "ISLAND_NAME-vector",
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							// minzoom: layer.minzoom,
+							// maxzoom: layer.maxzoom,
+							layout: {
+								"text-field": ["get", "name"],
+								"text-anchor": "top",
+
+							},
+							paint: {
+								"text-color": "#000",
+								"text-halo-color": "#fff",
+								"text-halo-width": 1
+							},
+
+						});
+
+
+						//     // 填充层
+						// map.addLayer({
+						//   id: `${layer.id}-fill`,
+						//   type: 'symbol',
+						//   source: 'ISLAND_NAME-vector',
+						//   'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+						//   minzoom: layer.minzoom,
+						//   maxzoom: layer.maxzoom,
+						//   layout: {
+						//   'text-field': ['get', 'depth'],  // 显示水深值
+						//   'text-size': 10,
+						//   'text-font': ['Noto Sans Regular'],  // 字体可自定义
+						//   'text-offset': [0, 0],
+						//   'text-anchor': 'center',
+						//   'text-padding': 14                  // 增大碰撞体积（默认是 2）
+						// },
+						//   paint: {
+						//     'text-color': '#808080',  // 水深数字的颜色
+						//     'text-halo-color': '#ffffff',
+						//     'text-halo-width': 0
+						//   }
+						// });
+
+
+					});
+
+				}
+				,
+				async load_Way() {
+					// 先添加数据源
+					this.map.addSource('fairway-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/fairway/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+					this.map.addSource('fairway-zhixin-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/fairway_质心/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+
+
+					// 定义每个 source-layer 对应的 zoom 范围
+					const layers = [
+						{ id: 'fairway_1', minzoom: 5, maxzoom: 6 },
+						{ id: 'fairway_2', minzoom: 6, maxzoom: 7 },
+						{ id: 'fairway_3', minzoom: 7, maxzoom: 8 },
+						{ id: 'fairway_4', minzoom: 8, maxzoom: 9 },
+						{ id: 'fairway_5', minzoom: 9, maxzoom: 14 },
+						{ id: 'fairway_6', minzoom: 14, maxzoom: 15 }
+					];
+
+
+					// 遍历添加图层
+					layers.forEach(layer => {
+
+						//       // 添加航道、导管区、限制区的填充图层
+						// map.addLayer({
+						//     id: `${layer.id}-fill`,
+						//     type: "fill",
+						//     source: 'fairway-vector',
+						//     'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+						//     filter: ["!in", "layer", "ACHARE", "FAIRWY","RESARE"],  // 过滤掉锚地
+						//     paint: {
+						//         "fill-color": [
+						//             "match",
+						//             ["get", "layer"],
+						//             "FAIRWY", "#800080",  // 航道紫色
+						//             "PIPARE", "#FF8C00", // 导管区橙色
+						//             "RESARE", "#C545C3", // 限制区蓝色
+						//             "#808080"           // 默认灰色
+						//         ],
+						//         "fill-opacity": 0.4,
+						//         "fill-outline-color": "#000000"
+						//     },
+						//     minzoom: layer.minzoom,
+						//     maxzoom: layer.maxzoom,
+						// });
+
+						// 添加限制区域边框（粉色虚线）
+						this.map.addLayer({
+							id: `s57-RESARE-${layer.id}`,
+							type: "line",
+							source: 'fairway-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							filter: ["==", ["get", "layer"], "RESARE"],
+							paint: {
+								"line-color": "#C545C3", // 粉色
+								"line-width": 1,
+								"line-dasharray": [4, 4], // 虚线
+								"line-opacity": 0.8        // 透明度，0~1
+							},
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+						});
+
+						// 添加锚地区域边框（粉色虚线）
+						this.map.addLayer({
+							id: `s57-achare-${layer.id}`,
+							type: "line",
+							source: 'fairway-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							filter: ["==", ["get", "layer"], "ACHARE"],
+							paint: {
+								"line-color": "#C545C3", // 粉色
+								"line-width": 1,
+								"line-dasharray": [4, 4], // 虚线
+								"line-opacity": 0.8        // 透明度，0~1
+							},
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+						});
+
+						// 添加航道区域边框（灰色虚线）
+						this.map.addLayer({
+							id: `s57-FAIRWY-${layer.id}`,
+							type: "line",
+							source: 'fairway-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							filter: ["==", ["get", "layer"], "FAIRWY"],
+							paint: {
+								"line-color": "#808080", // 灰色
+								"line-width": 1,
+								"line-dasharray": [4, 4], // 虚线
+								"line-opacity": 0.8        // 透明度，0~1
+							},
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+						});
+
+
+						// Test - line 平铺
+						this.map.addLayer({
+							id: `s57-TEST-${layer.id}`,
+							type: 'line',
+							source: 'fairway-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							filter: ["==", ["get", "layer"], "RECTRC"],
+							// layout: {
+							//     'line-cap': 'butt',      // 线端样式
+							//     'line-join': 'round'     // 拐角样式
+							// },
+							paint: {
+								'line-width': 10,                         // 线宽（调整匹配图案比例）
+								'line-pattern': 'RECTRC55.png',            // ✅ 使用你加载的 sprite 图片做平铺
+								"line-opacity": 0.8,        // 透明度，0~1
+							},
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+						});
+
+						//NAVLNE (Navigational Line / 航行线)
+						this.map.addLayer({
+							id: `s57-NAVLNE-${layer.id}`,
+							type: 'line',
+							source: 'fairway-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							filter: ["==", ["get", "layer"], "NAVLNE"],
+							// layout: {
+							//     'line-cap': 'butt',      // 线端样式
+							//     'line-join': 'round'     // 拐角样式
+							// },
+							// paint: {
+							//     'line-width': 10,                         // 线宽（调整匹配图案比例）
+							//     'line-pattern': 'RECTRC55.png',            // ✅ 使用你加载的 sprite 图片做平铺
+							//     "line-opacity": 0.8,        // 透明度，0~1
+							//   },
+							paint: {
+								"line-color": "#808080", // 灰色
+								"line-width": 1,
+								"line-dasharray": [4, 4], // 虚线
+								"line-opacity": 0.8        // 透明度，0~1
+							},
+							// minzoom: layer.minzoom,
+							// maxzoom: layer.maxzoom,
+						});
+
+						//NAVLNE (Navigational Line / 航行线) FRYARE51.png
+						this.map.addLayer({
+							id: `s57-FERYRT-${layer.id}`,
+							type: 'line',
+							source: 'fairway-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							filter: ["==", ["get", "layer"], "FERYRT"],
+
+							paint: {
+								'line-width': 10,                         // 线宽（调整匹配图案比例）
+								'line-pattern': 'FRYARE51.png',            // ✅ 使用你加载的 sprite 图片做平铺
+								"line-opacity": 1,        // 透明度，0~1
+							},
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+
+						});
+
+
+
+						this.map.addLayer({
+							id: `s57-FAIRWY-zhixin-${layer.id}`,
+							type: "symbol",
+							source: "fairway-zhixin-vector",
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名
+							layout: {
+								"icon-image": "anchor-icon", // 需要提前用 map.loadImage 添加锚地图片
+								"icon-size": 1,
+								"icon-anchor": "center",
+								"icon-allow-overlap": true,     // ✅ 允许图标覆盖
+								"icon-ignore-placement": true   // ✅ 忽略碰撞检测，强制显示
+							},
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+						});
+					});
+
+				}
+				,
+				async load_BOUND() {
+					// 先添加数据源
+					this.map.addSource('BOUND-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/BOUND/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+
+
+
+
+					// // 边界线层
+					this.map.addLayer({
+						id: `BOUND-line`,
+						type: 'line',
+						source: 'BOUND-vector',
+						'source-layer': "chart_boundaries",
+						paint: {
+							'line-color': '#00FF00',
+							'line-width': 1
+						}
+					});
+
+					// 用 filter 限制 minzoom/maxzoom
+					this.map.setFilter("BOUND-line", [
+						"all",
+						[">=", ["zoom"], ["get", "minzoom"]],
+						["<=", ["zoom"], ["get", "maxzoom"]]
+					]);
+
+
+					// 鼠标悬停显示 filename
+					this.map.on("mousemove", "BOUND-line", (e) => {
+						// 光标变成小手
+						map.getCanvas().style.cursor = "pointer";
+
+						if (e.features.length > 0) {
+							const feature = e.features[0];
+							const filename = feature.properties.filename;
+
+							// 创建 Popup
+							new maplibregl.Popup({
+								closeButton: false,
+								closeOnClick: false
+							})
+								.setLngLat(e.lngLat)
+								.setHTML(`<b>${filename}</b>`)
+								.addTo(map);
+						}
+					});
+
+					// 鼠标移出恢复
+					this.map.on("mouseleave", "BOUND-line", () => {
+						map.getCanvas().style.cursor = "";
+						// 移除所有 popup
+						const popups = document.getElementsByClassName("maplibregl-popup");
+						while (popups.length > 0) {
+							popups[0].remove();
+						}
+					});
+
+
+
+				}
+				,
+				async load_BUOYS() {
+					// 先添加数据源
+					this.map.addSource('BUOYS-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/jianhua/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+
+					// 定义每个 source-layer 对应的 zoom 范围
+					const layers = [
+						// { id: 'buoys_1', minzoom: 9,  maxzoom: 10 },
+						{ id: 'buoys_2', minzoom: 0, maxzoom: 11 },
+						{ id: 'buoys_3', minzoom: 11, maxzoom: 12 },
+						{ id: 'buoys_4', minzoom: 12, maxzoom: 13 },
+						{ id: 'buoys_5', minzoom: 13, maxzoom: 15 },
+						{ id: 'buoys_6', minzoom: 15, maxzoom: 18 }
+					];
+
+					this.map.addLayer({
+						id: `buoys-rcidd`,//-${layer.id}
+						type: "symbol",
+						source: 'BUOYS-vector',
+						'source-layer': "简化_buoys_geojson",  // tippecanoe 生成的 layer 名
+						layout: {
+							"text-field": ["get", "RCID"],
+							"text-size": 12,
+							"text-offset": [0, 1.2],
+							"text-anchor": "top",
+							"icon-allow-overlap": true
+						},
+						paint: {
+							"text-color": "#000",
+							"text-halo-color": "#fff",
+							"text-halo-width": 1
+						},
+						minzoom: 12,
+						maxzoom: 15,
+					});
+
+
+					this.map.addLayer({
+						id: `buoys-symboll`,//-${layer.id}
+						type: "symbol",
+						source: 'BUOYS-vector',
+						'source-layer': "简化_buoys_geojson",  // tippecanoe 生成的 layer 名
+						layout: {
+							'icon-image':
+								//'BOYSPR60.png'
+								["get", "symbol"],
+							"icon-size": 1,
+							"icon-allow-overlap": true
+						},
+						minzoom: 12,
+						maxzoom: 15,
+					});
+
+
+				},
+				async load_obstacles() {
+					this.map.addSource('obstacles-vector', {
+						type: 'vector',
+						tiles: [`http://${this.serverIp}:8383/data/obstacles/{z}/{x}/{y}.pbf`],
+						minzoom: 0,
+						maxzoom: 14
+					});
+
+
+					// 定义每个 source-layer 对应的 zoom 范围
+					const layers = [
+						{ id: 'obstacles_1', minzoom: 5, maxzoom: 6 },
+						{ id: 'obstacles_2', minzoom: 6, maxzoom: 7 },
+						{ id: 'obstacles_3', minzoom: 7, maxzoom: 8 },
+						{ id: 'obstacles_4', minzoom: 8, maxzoom: 9 },
+						{ id: 'obstacles_5', minzoom: 9, maxzoom: 14 },
+						{ id: 'obstacles_6', minzoom: 14, maxzoom: 15 }
+					];
+
+					// 遍历添加图层
+					layers.forEach(layer => {
+						// 添加障碍物点（红色图标）
+						this.map.addLayer({
+							id: `s57-obstacles1-${layer.id}`,
+							type: "symbol",
+							source: 'obstacles-vector',
+							'source-layer': layer.id,  // tippecanoe 生成的 layer 名 UWTROC
+							filter: ["==", ["get", "layer"], "WRECKS"],
+
+							layout: {
+								"icon-image": "ISODGR51.png",  // 需要提前用 map.loadImage() 添加图标
+								"icon-size": 1.0,               // 图标大小
+								"icon-anchor": "center"         // 居中对齐
+							},
+							paint: {
+								"icon-opacity": 0.9             // 图标透明度
+							},
+							minzoom: layer.minzoom,
+							maxzoom: layer.maxzoom,
+						});
+
+
+
+
+					});
+
+
+				},
+				async loadPaths() {
+					try {
+						const response = await axios.get(`http://${this.serverIp}:3000/api/History_Gpath`); // 读取后端数据
+						this.History_Path = response.data;
+						console.log("读取路径列表成功:", this.History_Path);
+					} catch (error) {
+						console.error("读取路径列表失败:", error);
+					}
+				},
+
+				async loadCheckboxStatus() {
+					const response = await axios.get(`http://${this.serverIp}:3000/api/get-checkbox-status`);
+					const status = response.data.status;
+					this.radio = status
+					console.log(status)
+					//this.checkboxStatus = response.data.status;
+				},
+
+
+
+
+				async handleCheckboxChange() {
+					const response = await axios.post(`http://${this.serverIp}:3000/api/set-checkbox-status`,
+						{ status: this.radio });
+					console.log("helll" + response.data.success);
+					if (response.data.success) {
+						this.$message({
+							message: '修改成功',
+							type: 'success'
+						});
+
+						//this.$socket.emit('checkbox-status-changed', this.checkboxStatus); // 通过WebSocket广播更新
+						//alert('修改成功，请重试');
+					} else {
+						//alert('修改失败，请重试');
+						this.$message.error('修改失败');
+					}
+				},
+				async handleautoteerChange() {
+
+					const valueauto = `${this.autoSteering ? 1 : 0},${this.myloc.head_direction}`;
+
+					const response = await axios.post(`http://${this.serverIp}:3000/api/set-redis`,
+						{
+							key: "Navi",
+							field: "zidongduo",
+							value: valueauto
+
+						});
+					console.log("helll" + response.data.success);
+					if (response.data.success) {
+						this.$message({
+							message: '修改成功',
+							type: 'success'
+						});
+
+						//this.$socket.emit('checkbox-status-changed', this.checkboxStatus); // 通过WebSocket广播更新
+						//alert('修改成功，请重试');
+					} else {
+						//alert('修改失败，请重试');
+						this.$message.error('修改失败');
+					}
+				},
+
+				async loadSuduStatus() {
+					const response = await axios.get(`http://${this.serverIp}:3000/api/get-Sudu-status`);
+					const status = response.data.status;
+					this.zhuan_su = status
+					console.log(status)
+					//this.checkboxStatus = response.data.status;
+				},
+
+				async handleSuDuChange() {
+					const response = await axios.post(`http://${this.serverIp}:3000/api/set-Sudu-status`,
+						{ status: this.zhuan_su });
+					console.log("helll" + response.data.success);
+					if (response.data.success) {
+						this.$message({
+							message: '修改成功',
+							type: 'success'
+						});
+
+						//this.$socket.emit('checkbox-status-changed', this.checkboxStatus); // 通过WebSocket广播更新
+						//alert('修改成功，请重试');
+					} else {
+						//alert('修改失败，请重试');
+						this.$message.error('修改失败');
+					}
+				},
+
+
+				async loadBiPengStatus() {
+					const response = await axios.get(`http://${this.serverIp}:3000/api/get-BiPeng-status`);
+					const status = response.data.status;
+					this.isBiPeng = status
+					console.log(status)
+					//this.checkboxStatus = response.data.status;
+				},
+
+				async handleBiPengChange() {
+					const response = await axios.post(`http://${this.serverIp}:3000/api/set-BiPeng-status`,
+						{ status: this.isBiPeng });
+					console.log("helll" + response.data.success);
+					if (response.data.success) {
+						this.$message({
+							message: '修改成功',
+							type: 'success'
+						});
+
+						//this.$socket.emit('checkbox-status-changed', this.checkboxStatus); // 通过WebSocket广播更新
+						//alert('修改成功，请重试');
+					} else {
+						//alert('修改失败，请重试');
+						this.$message.error('修改失败');
+					}
+				},
+				async updateSelected(value) {
+					try {
+						const result = await this.cmd_Socket.send(value);
+						this.Path.GPath = value; // 只有当 send 成功后才赋值
+						console.log("选中:", value);
+					} catch (error) {
+						console.error("发送失败:", error);
+					}
+				},
+				confirmDelete(item) {
+					ElMessageBox.confirm(
+						`确定删除 "${item.label}" 吗？`,
+						"删除确认",
+						{
+							confirmButtonText: "删除",
+							cancelButtonText: "取消",
+							type: "warning",
+						}
+					)
+						.then(() => {
+							this.deleteCity(item);
+						})
+						.catch(() => {
+							ElMessage.info("取消删除");
+						});
+				},
+				// 进入全屏
+				enterFullScreen() {
+					const elem = document.documentElement; // 获取 HTML 元素
+					if (elem.requestFullscreen) {
+						elem.requestFullscreen();
+					} else if (elem.mozRequestFullScreen) {  // Firefox
+						elem.mozRequestFullScreen();
+					} else if (elem.webkitRequestFullscreen) {  // Chrome, Safari 和 Opera
+						elem.webkitRequestFullscreen();
+					} else if (elem.msRequestFullscreen) {  // IE 和 Edge
+						elem.msRequestFullscreen();
+					}
+				},
+
+				// 退出全屏
+				exitFullScreen() {
+					if (document.exitFullscreen) {
+						document.exitFullscreen();
+					} else if (document.mozCancelFullScreen) {  // Firefox
+						document.mozCancelFullScreen();
+					} else if (document.webkitExitFullscreen) {  // Chrome, Safari 和 Opera
+						document.webkitExitFullscreen();
+					} else if (document.msExitFullscreen) {  // IE 和 Edge
+						document.msExitFullscreen();
+					}
+				},
+				// updateMarkers(points) {
+				// 	// 清除旧标记
+				// 	this.path_markers.forEach(marker => this.map.removeLayer(marker));
+				// 	this.path_markers = [];
+
+				// 	// 重新添加新标记
+				// 	points.forEach((point, index) => {
+				// 		const marker = L.marker(point, {
+				// 			icon: L.divIcon({
+				// 				className: '', // 不使用默认样式
+				// 				html: `<span style="color: #ff00ff; font-weight: bold;">P${index + 1}</span>`, // 直接显示文字
+				// 				iconSize: [0, 0] // 去掉默认的 icon 空间
+				// 			})
+				// 		}).addTo(this.map);// 文字始终显示
+
+				// 		this.path_markers.push(marker);
+				// 	});
+				// },
+
+
+				updateMarkers(points) {
+					if (!this.map) return;
+
+					// 1. 删除旧图层和数据源
+					if (this.map.getLayer('path-line')) this.map.removeLayer('path-line');
+					if (this.map.getSource('path-line')) this.map.removeSource('path-line');
+					if (this.map.getLayer('path-points')) this.map.removeLayer('path-points');
+					if (this.map.getSource('path-points')) this.map.removeSource('path-points');
+
+					// 2. 添加路径线数据源
+					this.map.addSource('path-line', {
+						type: 'geojson',
+						data: {
+							type: 'Feature',
+							geometry: {
+								type: 'LineString',
+								coordinates: points
+							}
+						}
+					});
+
+					// 3. 绘制折线
+					this.map.addLayer({
+						id: 'path-line',
+						type: 'line',
+						source: 'path-line',
+						paint: {
+							'line-color': '#ff00ff',
+							'line-width': 2
+						}
+					});
+
+					// 4. 添加路径点源（带文字）
+					const pointFeatures = points.map((pt, i) => ({
+						type: 'Feature',
+						geometry: {
+							type: 'Point',
+							coordinates: pt
+						},
+						properties: {
+							label: `P${i + 1}`
+						}
+					}));
+
+					this.map.addSource('path-points', {
+						type: 'geojson',
+						data: {
+							type: 'FeatureCollection',
+							features: pointFeatures
+						}
+					});
+
+					// 5. 添加标记文字图层
+					this.map.addLayer({
+						id: 'path-points',
+						type: 'symbol',
+						source: 'path-points',
+						layout: {
+							'text-field': ['get', 'label'],
+							'text-size': 12,
+							'text-offset': [0, 0.5],
+							'text-anchor': 'top'
+						},
+						paint: {
+							'text-color': '#ff00ff',
+							'text-halo-color': '#ffffff',
+							'text-halo-width': 1
+						}
+					});
+				},
+
+				addTrackPoint(lat, lon) {
+					if (this.track.length >= 100) {
+						this.track.shift();  // 保持最多50个点
+					}
+					this.track.push([lat, lon]);
+
+					if (this.line) {
+						this.map.removeLayer(this.line);  // 移除旧的轨迹线
+					}
+
+					if (this.showTrack) {
+						this.line = L.polyline(this.track, { color: 'black', weight: 2 }).addTo(this.map);  // 重新绘制轨迹线
+
+						this.trackGroup.clearLayers(); // 清除整个 LayerGroup
+						// 在每个连接点添加一个小圆圈
+						this.track.forEach(latlng => {
+							let circle = L.circleMarker(latlng, {
+								color: 'black',
+								fillColor: 'white',
+								fillOpacity: 1,
+								radius: 3,
+								weight: 1,            // 边框宽度（1px）
+							});
+
+							this.trackGroup.addLayer(circle); // 添加到 group
+						});
+
+					}
+				},
+
+
+
+				createIcon_ziji(rotation = 0, iconUrl = '自己船.svg') {
+					return L.divIcon({
+						className: 'custom-icon',
+						html: `<img src="${iconUrl}" style="transform: rotate(${rotation}deg); width: 80px; height: 80px;" />`,
+						iconSize: [80, 80],  // 图标大小
+						iconAnchor: [40, 40],  // 锚点位置
+						popupAnchor: [0, -15]  // 弹窗位置
+					});
+				},
+
+
+				checkShipsUpdate() {
+
+					// 每隔 1 秒检查一次每个船只的更新时间
+					this.intervalId = setInterval(() => {
+						//console.log("check");
+						const currentTime = Date.now();
+
+						// 遍历 shipsMap 检查每个船只的更新时间
+						this.shipsMap.forEach((value, key) => {
+							const { shipMarker, lastUpdateTime } = value;
+
+							// 如果船只超过 10 秒没有更新
+							if (currentTime - lastUpdateTime > 10000) {
+								console.log(`ID: ${key} 已超过 10 秒未更新，删除该船及其标记`);
+
+								// 从 map 中删除该船的记录
+								this.shipsMap.delete(key);
+
+								// 从地图中删除该标记
+								this.map.removeLayer(shipMarker);
+							}
+						});
+					}, 1000); // 每秒检查一次
+				},
+				clearTrack() {
+					this.track.length = 0;
+					this.map.removeLayer(this.line);
+					this.trackGroup.clearLayers(); // 清除整个 LayerGroup
+
+				},
+				async saveGpath() {
+					const response = await axios.post(`http://${this.serverIp}:3000/api/add_History_Gpath`,
+						{ status: this.Path.GPath });
+					console.log("helll" + response.data.success);
+					if (response.data.success) {
+						this.$message({
+							message: '修改成功',
+							type: 'success'
+						});
+						this.loadPaths();
+
+						//this.$socket.emit('checkbox-status-changed', this.checkboxStatus); // 通过WebSocket广播更新
+						//alert('修改成功，请重试');
+					} else {
+						//alert('修改失败，请重试');
+						this.$message.error('修改失败');
+					}
+
+
+
+
+
+
+
+
+				},
+				// 切换绘制模式
+				poly_toggleDrawingMode() {
+
+
+					if (!this.fences_isDrawing) {
+						// 进入绘制模式
+						this.fences_isDrawing = true;
+						this.fences_polylinePoints = [];  // 清空点
+						if (this.fences_polyline) {
+							this.$map.removeLayer(this.fences_polyline);  // 移除已有折线
+							this.fences_polyline = null;
+						}
+						if (!this.fences_tempLine) {
+							// 创建临时线条
+							this.fences_tempLine = L.polyline([], { color: '#ff00ff', dashArray: '5,5', weight: 2, lineJoin: '' }).addTo(this.$map);
+						}
+						document.getElementById('map').classList.add('drawing'); // 改变鼠标样式
+					} else {
+						// 退出绘制模式
+						this.fences_isDrawing = false;
+						if (this.fences_tempLine) {
+							this.$map.removeLayer(this.fences_tempLine); // 移除临时线条
+							this.fences_tempLine = null;
+						}
+						document.getElementById('map').classList.remove('drawing'); // 恢复鼠标样式
+
+						// 绘制完成后打印格式化的 polylinePoints
+						this.printFormattedPoints();
+					}
+				},
+
+
+				// // 切换绘制模式
+				// toggleDrawingMode() {
+				// 	if (!this.isDrawing) {
+				// 		// 进入绘制模式
+				// 		this.isDrawing = true;
+				// 		this.polylinePoints = [];  // 清空点
+				// 		if (this.polyline) {
+				// 			this.$map.removeLayer(this.polyline);  // 移除已有折线
+				// 			this.polyline = null;
+				// 		}
+				// 		if (!this.tempLine) {
+				// 			// 创建临时线条
+				// 			this.tempLine = L.polyline([], { color: '#ff00ff', dashArray: '5,5', weight: 2, lineJoin: '' }).addTo(this.$map);
+				// 		}
+				// 		document.getElementById('map').classList.add('drawing'); // 改变鼠标样式
+				// 	} else {
+				// 		// 退出绘制模式
+				// 		this.isDrawing = false;
+				// 		if (this.tempLine) {
+				// 			this.$map.removeLayer(this.tempLine); // 移除临时线条
+				// 			this.tempLine = null;
+				// 		}
+				// 		document.getElementById('map').classList.remove('drawing'); // 恢复鼠标样式
+
+				// 		// 绘制完成后打印格式化的 polylinePoints
+				// 		this.printFormattedPoints();
+				// 	}
+				// },
+
+				toggleDrawingMode() {
+					if (!this.isDrawing) {
+
+						// 隐藏图层
+						this.map.setLayoutProperty('gpath-line', 'visibility', 'none')
+
+
+						// // 显示图层
+						// this.map.setLayoutProperty('gpath-line', 'visibility', 'visible')
+
+
+						// 进入绘制模式
+						this.isDrawing = true;
+						this.polylinePoints = [];  // 清空点
+
+						// 移除已有折线图层和数据源
+						if (this.map.getLayer('draw-line')) this.map.removeLayer('draw-line');
+						if (this.map.getSource('draw-line')) this.map.removeSource('draw-line');
+						if (this.map.getLayer('draw-points')) this.map.removeLayer('draw-points');
+						if (this.map.getSource('draw-points')) this.map.removeSource('draw-points');
+
+						// 创建临时折线数据源（空折线，用于实时绘制）
+						if (!this.tempLineSource) {
+							this.map.addSource('temp-line', {
+								type: 'geojson',
+								data: {
+									type: 'Feature',
+									geometry: {
+										type: 'LineString',
+										coordinates: []
+									}
+								}
+							});
+							this.map.addLayer({
+								id: 'temp-line',
+								type: 'line',
+								source: 'temp-line',
+								paint: {
+									'line-color': '#ff00ff',
+									'line-width': 2,
+									'line-dasharray': [5, 5]
+								}
+							});
+							this.tempLineSource = true;
+						}
+
+						// 切换鼠标样式
+						document.getElementById('map').classList.add('drawing');
+
+					} else {
+
+
+						// 退出绘制模式
+						this.isDrawing = false;
+
+						// 移除临时折线图层和数据源
+						if (this.map.getLayer('draw-line')) this.map.removeLayer('draw-line');
+						if (this.map.getSource('draw-line')) this.map.removeSource('draw-line');
+
+						if (this.map.getLayer('draw-points')) this.map.removeLayer('draw-points');
+						if (this.map.getSource('draw-points')) this.map.removeSource('draw-points');
+
+						if (this.map.getLayer('temp-line')) this.map.removeLayer('temp-line');
+						if (this.map.getSource('temp-line')) this.map.removeSource('temp-line');
+						this.tempLineSource = false;
+
+						// 恢复鼠标样式
+						document.getElementById('map').classList.remove('drawing');
+
+						// 绘制完成后处理折线点
+						this.printFormattedPoints();
+
+						// 如果需要，可以调用 updateMarkers 绘制最终折线
+						if (this.polylinePoints.length > 0) {
+							this.updateMarkers(this.polylinePoints);
+						}
+
+						// // 显示图层
+						// this.map.setLayoutProperty('gpath-line', 'visibility', 'visible')
+
+					}
+				},
+
+				// 打印格式化的折线点
+				printFormattedPoints() {
+					const formattedPoints = this.polylinePoints.map(point => `(${point[0]}, ${point[1]})`).join(', ');
+					console.log(`绘制的折线点: ${formattedPoints}`);
+
+					const pointCount = this.polylinePoints.length;
+					const pointsString = this.polylinePoints
+						.map(point => `${point[0]},${point[1]}`) // 将纬度和经度格式化为 lon, lat
+						.join(',');  // 用逗号连接
+
+					const formattedData = `$GP,${pointCount},${pointsString}`;
+					//socket_cmd.send(formattedData);
+					console.log(formattedData);  // 打印格式化的结果
+
+					this.cmd_Socket.send(formattedData);
+				},
+
+				// // 监听鼠标点击，更新折线点
+				// handleMapClick(event) {
+				// 	if (this.isDrawing) {
+				// 		const latLng = event.latlng;
+				// 		const { lat, lng } = latLng;
+
+				// 		this.polylinePoints.push([lat, lng]);
+
+				// 		// 更新或创建正式折线
+				// 		if (this.polyline) {
+				// 			this.polyline.setLatLngs(this.polylinePoints);  // 更新折线
+				// 		} else {
+				// 			// 创建新的折线并添加到地图
+				// 			this.polyline = L.polyline(this.polylinePoints, {
+				// 				color: '#ff00ff',
+				// 				weight: 2,
+				// 				zIndex: 11
+				// 			}).addTo(this.$map);
+				// 		}
+				// 	}
+				// },
+
+				handleMapClick(event) {
+					if (!this.isDrawing) return;
+
+					const { lng, lat } = event.lngLat; // MapLibre GL 鼠标事件没有 latlng，直接用 e.lngLat
+					this.polylinePoints.push([lng, lat]); // MapLibre GL 坐标顺序 [lng, lat]
+					console.log(this.polylinePoints);
+					// 如果图层已经存在，更新数据源
+					if (this.map.getSource('draw-line')) {
+						this.map.getSource('draw-line').setData({
+							type: 'Feature',
+							geometry: {
+								type: 'LineString',
+								coordinates: this.polylinePoints
+							}
+						});
+					} else {
+						// 创建新的数据源
+						this.map.addSource('draw-line', {
+							type: 'geojson',
+							data: {
+								type: 'Feature',
+								geometry: {
+									type: 'LineString',
+									coordinates: this.polylinePoints
+								}
+							}
+						});
+
+						// 添加折线图层
+						this.map.addLayer({
+							id: 'draw-line',
+							type: 'line',
+							source: 'draw-line',
+							paint: {
+								'line-color': '#ff00ff',
+								'line-width': 2
+							}
+						});
+					}
+				},
+
+				// 监听鼠标移动，更新坐标显示和临时线条
+				handleMouseMove(event) {
+					const lat = event.latlng.lat.toFixed(5);  // 纬度保留5位小数
+					const lng = event.latlng.lng.toFixed(5);  // 经度保留5位小数
+					this.coordsDisplay = `经度: ${lng}, 纬度: ${lat}`;
+					this.map.attributionControl.setPrefix(this.coordsDisplay);
+					//this.map.attributionControl.addAttribution("开发者: 尼信雨");
+
+					// 如果处于绘制模式，更新临时线条的起点和终点
+					if (this.isDrawing && this.polylinePoints.length > 0) {
+						const lastPoint = this.polylinePoints[this.polylinePoints.length - 1];
+						const mousePoint = [event.latlng.lat, event.latlng.lng];
+						this.tempLine.setLatLngs([lastPoint, mousePoint]);  // 更新临时线条
+					}
+				},
+
+
+			},
+			computed: {
+				// 根据 showTabs 控制选择框的位置
+				controlsStyle() {
+					return {
+						position: 'absolute',
+						top: '10px',
+						right: '600px',  // 控件始终位于 Leaflet 地图容器右上角
+						zIndex: 1000,
+						background: 'rgba(255, 255, 255, 0.7)',
+						padding: '10px',
+						borderRadius: '5px',
+						display: 'flex',
+						flexDirection: 'column',  // 垂直排列
+						gap: '10px'  // 控件之间的间距
+					};
+				}
+			},
+			mounted() {
+				this.selectedTargets = new Set();
+
+				// 禁用右侧滚动条
+				document.body.style.overflowY = 'hidden';
+				this.checkShipsUpdate();
+
+
+				// 模拟接收到的实时数据并更新船只位置`http://${this.serverIp}
+				this.status_Socket = new WebSocket(`ws://${this.serverIp}:18080`);  // 连接到 WebSocket 服务器
+
+
+
+				this.status_Socket.onmessage = (event) => {
+					const data = JSON.parse(event.data);  // 从服务器接收的数据（包含键值对）
+					console.log(data);
+
+					data.forEach(item => {
+						if (item.key.includes('IMU')) {
+							try {
+								let imuData = item.value;
+
+								if (typeof imuData === 'string') {
+									imuData = JSON.parse(imuData);
+								}
+
+								if (imuData && imuData.Lon && imuData.Lat) {
+
+
+									this.myloc.mylat = imuData.Lat;
+									this.myloc.mylon = imuData.Lon;
+									this.myloc.speed = parseFloat(imuData.speed).toFixed(1);
+									this.myloc.head_direction = ((parseFloat(imuData.heading) + 360.0) % 360.0).toFixed(1);
+									this.myloc.speed_direction = ((parseFloat(imuData.angle) + 360.0) % 360.0).toFixed(1);
+									this.myloc.height = parseFloat(imuData.height).toFixed(1);
+
+									if (this.isCenter) {
+										//this.map.setView([parseFloat(this.myloc.mylat), parseFloat(this.myloc.mylon)], this.map.getZoom());
+										this.map.flyTo({
+											center: [parseFloat(this.myloc.mylon), parseFloat(this.myloc.mylat)],
+											zoom: this.map.getZoom(),
+											speed: 1.2,        // 飞行动画速度（默认1.2）
+											curve: 1.5,        // 动画曲线（可选）
+											essential: true    // 用户交互时仍允许动画
+										})
+									}
+									if (!this.isNorthUp) {
+										// 关闭北向上 → 使用首向旋转
+										this.map.easeTo({
+											bearing: this.myloc.head_direction,
+											duration: 300
+										});
+									}
+									//this.map.setBearing(-1*this.myloc.head_direction);  // 旋转 45°
+
+									this.refreshOwnShip();
+									// // 更新船只位置
+									// this.shipMarker.setLatLng([this.myloc.mylat, this.myloc.mylon]);
+
+									// // 旋转图标到指定角度
+									// const heading = imuData.heading || 0;  // 获取旋转角度（假设为Heading字段）
+									// //console.log(heading)
+									// this.shipMarker.setIcon(createIcon_ziji(heading));  // 更新图标的旋转角度
+
+									// // 更新弹窗内容
+									// this.shipMarker.setPopupContent(`当前位置: 经度 ${this.myloc.mylon}, 纬度 ${this.myloc.mylat}`);
+
+									// if (this.count % 5 == 0) {
+									// 	this.addTrackPoint(this.myloc.mylat, this.myloc.mylon);
+									// }
+									// this.count++;
+
+								}
+							} catch (e) {
+								console.error("Error parsing IMU data:", e);
+							}
+						}
+						else if (item.key.includes('LOST')) {
+							//	systems: {
+							//		GPS: true,
+							//		雷达: true,
+							//		动力: false,
+							//		电力: true
+							//	  },
+
+
+							try {
+								let lostData = item.value;
+
+								if (typeof lostData === 'string') {
+									lostData = JSON.parse(lostData);
+								}
+
+								if (lostData) {
+
+
+
+									this.systems.GPS = lostData.GPS === "1";
+									this.systems.雷达 = lostData.lada === "1";
+									this.systems.动力 = lostData.dongli === "1";
+									this.systems.电力 = lostData.dianli === "1";
+
+
+								}
+							} catch (e) {
+								console.error("Error parsing IMU data:", e);
+							}
+						}
+
+						else if (item.key.includes('Navi')) {
+							try {
+								let NaviData = item.value;
+
+								if (typeof NaviData === 'string') {
+									NaviData = JSON.parse(NaviData);
+								}
+								// 检查 NaviData 是否有效，并且是否有 GPath
+								if (NaviData && NaviData.GPath) {
+									// 提取 LPath 数据
+									let GPath = NaviData.GPath; // 格式: $GP,2,122.327786,29.917094,122.297430,29.906215,...
+
+									// 对比新的 GPath 是否与全局的 GPath 一致
+									if (GPath !== previousGPath) {
+
+										// 更新全局变量
+										previousGPath = GPath;
+										console.log("更新全局变量");
+										Path.GPath = GPath;
+/*
+							// 解析 GPath 数据
+							let parts = GPath.split(',');  // 按逗号分隔
+							let pointCount = parseInt(parts[1], 10);  // 第二个值是点的数量
+							let polylinePoints = [];
+
+							// 从第3个值开始，每两个值是经纬度坐标
+							for (let i = 2; i < parts.length - 1; i += 2) {
+								let lon = parseFloat(parts[i]);   // 经度
+								let lat = parseFloat(parts[i + 1]); // 纬度
+								polylinePoints.push([lat, lon]);
+							}
+							//this.polylinePoints =polylinePoints
+							// 如果已经有折线，则移除之前的折线
+							if (polyline) {
+								map.removeLayer(polyline);
+							}
+
+							// 绘制新的折线
+							//polyline = L.polyline(polylinePoints, { color: '#ff00ff', weight: 2 , zIndex: 11}).addTo(map);
+					*/	}
+								}
+								else {
+									Path.GPath = "";
+								}
+								// 检查 NaviData 是否有效，并且是否有 LPath
+								if (NaviData && NaviData.LPath) {
+									// 提取 LPath 数据
+									let LPath = NaviData.LPath; // 格式: $LP,2,122.327786,29.917094,122.297430,29.906215,...
+									// 对比新的 GPath 是否与全局的 GPath 一致
+									if (LPath !== previousLPath) {
+										// 更新全局变量
+										previousLPath = LPath;
+										Path.LPath = LPath;
+										/*
+										// 解析 LPath 字符串，跳过第一个 '$LP' 和点的数量
+										let parts = LPath.split(',');
+										let pointCount = parseInt(parts[2], 10); // 第二个值为点的数量
+										let coordinates = [];
+			
+										// 从第3个值开始，按每两个数为一对经纬度坐标
+										for (let i = 3; i < parts.length - 1; i += 2) {
+											let lon = parseFloat(parts[i]);
+											let lat = parseFloat(parts[i + 1]);
+											coordinates.push([lat, lon]);
+										}
+			
+										// 如果已有折线，先移除之前的折线
+										if (Lpath_polyline ) {
+											this.map.removeLayer(Lpath_polyline );
+										}
+			
+										// 绘制新的折线
+										Lpath_polyline = L.polyline(coordinates, { color: 'blue' , zIndex: 10}).addTo(map);
+									*/
+									}
+
+									// 可选：让折线自动适应地图视图
+									//map.fitBounds(Lpath_polyline.getBounds());
+								}
+								else {
+									Path.LPath = "";
+									previousLPath = "";
+								}
+							} catch (e) {
+								console.error("Error parsing IMU data:", e);
+							}
+						}
+
+
+
+
+					});
+				};
+
+
+
+				//`ws://${this.serverIp}:8080`
+				this.cmd_Socket = new WebSocket(`ws://${this.serverIp}:8282`);  // 请根据实际情况修改 WebSocket 服务地址
+				this.radar_Socket = new WebSocket(`ws://${this.serverIp}:8181`);
+
+				this.radar_Socket.onopen = () => {
+					console.log('WebSocket 已连接到服务器');
+				};
+
+				this.radar_Socket.onmessage = (event) => {
+
+					// 按逗号分隔数据
+					//console.log(event.data);
+
+					const arr = JSON.parse(event.data);
+					const geojson = {
+						type: "FeatureCollection",
+						features: arr.map(item => ({
+							type: "Feature",
+							geometry: {
+								type: "Point",
+								coordinates: [parseFloat(item.longitude), parseFloat(item.latitude)]
+							},
+							properties: {
+								...item,
+								direction: Number(item.direction),  // ✅ 转为数字类型
+								speed: Number(item.speed).toFixed(1),
+								distance: Number(item.distance).toFixed(2),
+								cpDistance: (Number(item.cpDistance) * 1852).toFixed(2),
+								cpTime: Number(item.cpTime).toFixed(1),
+							} // 将所有字段都放在 properties
+						}))
+					};
+
+					//console.log(JSON.stringify(geojson, null, 2));
+
+
+					// 如果数据源不存在，则添加
+					if (!this.map.getSource("target_ships")) {
+						this.map.addSource("target_ships", {
+							type: "geojson",
+							data: geojson
+						});
+
+						this.map.addLayer({
+							id: "target-layer",
+							type: "symbol",
+							source: "target_ships",
+							layout: {
+								"icon-image": [
+									"match",
+									["get", "Alarmstufe"], // 获取 feature.properties.Alarmstufe
+									"0", "fusion0.svg",      // 如果值为 0，使用 fusion0.svg
+									"1", "fusion1.svg",      // 如果值为 1，使用 fusion1.svg
+									"2", "fusion2.svg",      // 如果值为 2，使用 fusion2.svg
+									"fusion0.svg"           // 默认值（fallback）
+								],         // 自定义图标（需先用 map.loadImage 注册）
+								"icon-size": 0.1,
+								"icon-anchor": "center",            // 锚点在中心
+								"icon-allow-overlap": true,         // 允许图标重叠
+								"icon-ignore-placement": true,      // 不被挤掉
+								"icon-rotation-alignment": "map",   // 按地图方向旋转
+								"icon-rotate": ["get", "direction"] // 读取 properties.direction 字段
+							}
+						});
+
+
+
+
+						// 再添加文字层
+						this.map.addLayer({
+							id: "target-label-layer",
+							type: "symbol",
+							source: "target_ships",
+							layout: {
+								"text-field": [
+									"format",
+									["get", "target"], { "font-scale": 1.0 },
+									"\n速度: ", {}, ["get", "speed"], { "font-scale": 0.8 },
+									" kn\n距离: ", {}, ["get", "distance"], { "font-scale": 0.8 },
+									" m\nDCPA: ", {}, ["get", "cpDistance"], { "font-scale": 0.8 },
+									" m\nTCPA: ", {}, ["get", "cpTime"], { "font-scale": 0.8 },
+									" min\n告警: ", {}, ["get", "Alarmstufe"], { "font-scale": 0.8 }
+								],
+								"text-size": 12,
+								"text-anchor": "left",
+								// "text-font": ["Roboto Mono Regular"], // 固定宽度字体，方便对齐
+								"text-justify": "left", // 左对齐文本（MapLibre 已支持）
+								"text-offset": [1.2, 2],  // 向右偏移一点，避免挡住图标
+								"text-allow-overlap": true,
+								"text-ignore-placement": true
+							},
+							paint: {
+								"text-color": [
+									"case",
+									["==", ["get", "Alarmstufe"], "2"], "red",
+									["==", ["get", "Alarmstufe"], "1"], "#cf6f00",
+									["==", ["get", "Alarmstufe"], "0"], "black",//#ff00b2
+									"green"
+								],
+								//"text-halo-color": "white",
+								//"text-halo-width": 1
+							}
+						});
+						// 更新过滤器（重新绘制信息牌）
+						this.map.setFilter("target-label-layer", [
+							"in", ["get", "target"], ["literal", Array.from(this.selectedTargets)]
+						]);
+
+
+					} else {
+						// 已存在则更新数据
+						this.map.getSource("target_ships").setData(geojson);
+					}
+					this.map.moveLayer("target-layer");
+					this.map.moveLayer("target-label-layer");
+
+
+
+				};
+
+				this.radar_Socket.onclose = () => {
+					console.log('WebSocket 已关闭');
+				};
+
+				this.radar_Socket.onerror = (error) => {
+					console.error('WebSocket 错误:', error);
+				};
+
+
+
+
+
+				this.map = new maplibregl.Map({
+					container: 'map',
+					style: 'style.json', // 样式URL
+					center: [122.058780, 30.003185],
+					maxZoom: 22,
+					minZoom: 0,
+					zoom: 10
+				});
+
+				// 自定义控件类
+				class InfoControl {
+					constructor(toDMS) {
+						this.toDMS = toDMS;
+					}
+					onAdd(map) {
+						this.map = map;
+						this.container = document.createElement('div');
+						this.container.style.cssText = `
+  background: rgba(0, 0, 0, 0.6);
+  color: #00ffcc;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0 0 4px 4px;
+  font-family: monospace;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  line-height: 1.2;
+  white-space: pre;   /* 保留空格，防止折叠 */
+`;
+						this.updateText(0, 0, map.getZoom());
+						return this.container;
+					}
+					formatZoom(zoom) {
+						// 保留 1 位小数
+						const zoomStr = zoom.toFixed(1); // "9.3" 或 "12.5"
+
+						// 小数点前两位，空格占位
+						const parts = zoomStr.split('.');
+						const intPart = parts[0].padStart(2, ' '); // 空格占位
+						const decimalPart = parts[1];               // 小数部分
+
+						return `${intPart}.${decimalPart}`;
+					}
+					updateText(lng, lat, zoom) {
+						//const zoomStr = zoom.toFixed(1).split('.').map((v,i) => i===0 ? v.padStart(2,' ') : v).join('.');
+						this.container.textContent = `zoom: ${this.formatZoom(zoom)} | 经度: ${this.toDMS(lng)} | 纬度: ${this.toDMS(lat)}`;
+					}
+
+					onRemove() {
+						this.container.remove();
+						this.map = undefined;
+					}
+				}
+
+				// 添加控件
+				const infoCtrl = new InfoControl(this.toDMS);
+				this.map.addControl(infoCtrl, 'bottom-left');
+
+				// 鼠标移动时更新经纬度
+				this.map.on('mousemove', e => {
+					const { lng, lat } = e.lngLat;
+					const zoom = this.map.getZoom();
+					infoCtrl.updateText(lng, lat, zoom);
+
+
+					// 如果处于绘制模式，更新临时线条的起点和终点
+					if (this.isDrawing && this.polylinePoints.length > 0) {
+						const lastPoint = this.polylinePoints[this.polylinePoints.length - 1];
+						const mousePoint = [lat, lng];
+						console.log([lastPoint, [lng, lat]]);
+
+						const tempLine = {
+							type: 'FeatureCollection',
+							features: [
+								{
+									type: 'Feature',
+									geometry: {
+										type: 'LineString',
+										coordinates: [lastPoint, [lng, lat]]
+									}
+								}
+							]
+						}
+						this.map.getSource('temp-line').setData(tempLine)
+
+					}
+
+				});
+
+				// 鼠标点击绘制折线
+				this.map.on('click', e => {
+					this.handleMapClick(e);
+				});
+
+				// 缩放时更新 zoom 显示
+				this.map.on('zoom', () => {
+					const center = this.map.getCenter();
+					infoCtrl.updateText(center.lng, center.lat, this.map.getZoom());
+				});
+
+				// 添加缩放和罗盘控件
+				this.map.addControl(new maplibregl.NavigationControl({
+					visualizePitch: true,  // 控制器里显示俯仰（可选）
+					showCompass: true,     // 显示指南针（默认 true）
+					showZoom: true         // 显示缩放按钮（默认 true）
+				}), 'bottom-right'); // 控件位置，可选 'top-right'、'top-left'、'bottom-right'、'bottom-left'
+
+				this.map.on('load', async () => {
+					try {
+						const iconMap = {
+							"BOYSPR61.png": "patterns/BOYSPR61.png",
+							"BOYSPR60.png": "patterns/BOYSPR60.png",
+							"BOYPIL62.png": "patterns/BOYPIL62.png",
+							"BOYPIL72.png": "patterns/BOYPIL72.png",
+							"BOYPIL61.png": "patterns/BOYPIL61.png",
+							"BOYPIL60.png": "patterns/BOYPIL60.png",
+							"RECTRC55.png": "patterns/RECTRC55.png",
+							"FRYARE51.png": "patterns/FRYARE51.png",
+							"ISODGR51.png": "patterns/ISODGR51.png",
+							"OWNSHP01.png": "patterns/OWNSHP01.png",
+							"own_head.png": "symbol/own_head.png",
+							"own_speed.png": "symbol/own_speed.png",
+							"fusion0.svg": "symbol/fusion0.svg",
+							"fusion1.svg": "symbol/fusion1.svg",
+							"fusion2.svg": "symbol/fusion2.svg",
+
+
+
+							"null": "patterns/BOYPIL64.png",
+							"anchor-icon": "patterns/ACHARE51.png",
+
+							// "C_D": "./patterns/buoy_c_d.png",
+							// "E_F": "./patterns/buoy_e_f.png"
+						};
+
+						/**
+						 * iconMap: { "typeA": "urlA", "typeB": "urlB" }
+						 * 第3、4列组合决定类型，例如 key = col3 + "_" + col4
+						 */
+
+						// 预加载所有图标
+						for (const [key, url] of Object.entries(iconMap)) {
+							if (!this.map.hasImage(key)) {
+								const img = new Image();
+								img.crossOrigin = "anonymous";   // 🔑 必须加
+								img.src = url;
+								await new Promise((resolve, reject) => {
+									img.onload = resolve;
+									img.onerror = reject;
+								});
+								this.map.addImage(key, img);
+								console.log("✅ 已加载图标:", key);
+							}
+						}
+
+						await this.load_DEPARE();
+						await this.loadSound();
+						await this.load_Land();
+						await this.loadISLAND_NAME();
+
+						await this.load_Way();
+						await this.load_obstacles();
+						await this.load_BOUND();
+						await this.load_BUOYS();
+
+
+
+						// // 添加空的 GeoJSON 数据源（用于临时线）
+						// this.map.addSource('temp-line', {
+						// 	type: 'geojson',
+						// 	data: {
+						// 	type: 'FeatureCollection',
+						// 	features: []
+						// 	}
+						// })
+
+						// // 添加显示临时线的图层
+						// this.map.addLayer({
+						// 	id: 'temp-line-layer',
+						// 	type: 'line',
+						// 	source: 'temp-line',
+						// 	paint: {
+						// 	'line-color': '#00ffff',
+						// 	'line-width': 2
+						// 	}
+						// })
+
+
+						this.map.moveLayer("gpath-line");
+						await this.init_ownship();
+					} catch (e) {
+						console.error('加载图层失败:', e);
+					}
+				});
+
+
+
+
+				this.map.on("click", "target-layer", (e) => {
+					console.log(e);
+					if (!e.features.length) return;
+					const feature = e.features[0];
+					const id = feature.properties.target;
+
+					// 切换选中状态
+					if (this.selectedTargets.has(id)) {
+						this.selectedTargets.delete(id);
+					} else {
+						this.selectedTargets.add(id);
+					}
+					console.log("Selected targets:", Array.from(this.selectedTargets));
+
+					// 更新过滤器（重新绘制信息牌）
+					this.map.setFilter("target-label-layer", [
+						"in", ["get", "target"], ["literal", Array.from(this.selectedTargets)]
+					]);
+				});
+
+
+
+			},
+			watch: {
+
+				polylinePoints(newVal) {
+					this.updateMarkers(newVal);
+				},
+				isCenter(newVal) {
+					if (newVal) {
+						this.map.setZoom(12);
+					}
+				},
+				isNorthUp(newVal) {
+					if (newVal) {
+						// 恢复北向上
+						this.map.easeTo({
+							bearing: 0,
+							pitch: 0,     // 可选，看你是否需要恢复俯仰角
+							duration: 300
+						});
+					} else {
+						// 关闭北向上 → 使用首向旋转
+						this.map.easeTo({
+							bearing: this.myloc.head_direction,
+							duration: 300
+						});
+					}
+				},
+				autoSteering(newVal) {
+
+					if (newVal) {
+
+					}
+					else {
+
+					}
+				},
+
+				showStatus(newVal) {
+					if (newVal) {
+
+					}
+					else {
+
+						this.shipsMap.forEach((value, key) => {
+							if (value.tooltip) {
+								if (newVal) {
+									value.tooltip.openTooltip();  // 显示 Tooltip
+								} else {
+									value.tooltip.closeTooltip();  // 隐藏 Tooltip
+								}
+							}
+						});
+					}
+
+				},
+
+
+				showTrack(newVal) {
+					if (this.showTrack) {
+						this.line = L.polyline(this.track, { color: 'black', weight: 2 }).addTo(this.map);  // 重新绘制轨迹线
+
+						this.trackGroup.clearLayers(); // 清除整个 LayerGroup
+						// 在每个连接点添加一个小圆圈
+						this.track.forEach(latlng => {
+							let circle = L.circleMarker(latlng, {
+								color: 'black',
+								fillColor: 'white',
+								fillOpacity: 1,
+								radius: 3
+							});
+
+							this.trackGroup.addLayer(circle); // 添加到 group
+						});
+
+					}
+					else {
+						this.map.removeLayer(this.line);  // 移除旧的轨迹线
+						this.trackGroup.clearLayers(); // 清除整个 LayerGroup
+					}
+
+				},
+
+
+				// // 单独监听 GPath
+				// "Path.GPath"(newVal) {
+				// 	console.log("GPath 变化:", newVal);
+				// 	// 解析 GPath 数据
+				// 	let GPath = newVal;
+				// 	let parts = GPath.split(',');  // 按逗号分隔
+				// 	let pointCount = parseInt(parts[1], 10);  // 第二个值是点的数量
+				// 	let polylinePoints = [];
+
+				// 	// 从第3个值开始，每两个值是经纬度坐标
+				// 	for (let i = 2; i < parts.length - 1; i += 2) {
+				// 		let lon = parseFloat(parts[i]);   // 经度
+				// 		let lat = parseFloat(parts[i + 1]); // 纬度
+				// 		polylinePoints.push([lat, lon]);
+				// 	}
+				// 	this.polylinePoints = polylinePoints;
+				// 	// 如果已经有折线，则移除之前的折线
+				// 	if (this.polyline) {
+				// 		this.map.removeLayer(this.polyline);
+				// 	}
+
+				// 	// 绘制新的折线
+				// 	this.polyline = L.polyline(polylinePoints, { color: '#ff00ff', weight: 2, zIndex: 11 }).addTo(this.map);
+
+				// },
+
+
+				"Path.GPath"(newVal) {
+					console.log("GPath 变化:", newVal);
+
+					// 解析 GPath 数据
+					let GPath = newVal;
+					let parts = GPath.split(',');            // 按逗号分隔
+					let pointCount = parseInt(parts[1], 10); // 第二个值是点的数量
+					let polylinePoints = [];
+
+					// 从第3个值开始，每两个值是经纬度坐标
+					for (let i = 2; i < parts.length - 1; i += 2) {
+						let lon = parseFloat(parts[i]);   // 经度
+						let lat = parseFloat(parts[i + 1]); // 纬度
+						polylinePoints.push([lon, lat]);   // MapLibre GL 坐标顺序是 [lng, lat]
+					}
+
+					// 保存到组件状态
+					this.polylinePoints = polylinePoints;
+
+					// 移除旧折线图层和数据源
+					if (this.map.getLayer('gpath-line')) this.map.removeLayer('gpath-line');
+					if (this.map.getSource('gpath-line')) this.map.removeSource('gpath-line');
+
+					// 添加新的 GeoJSON 数据源
+					this.map.addSource('gpath-line', {
+						type: 'geojson',
+						data: {
+							type: 'Feature',
+							geometry: {
+								type: 'LineString',
+								coordinates: polylinePoints
+							}
+						}
+					});
+
+					// 绘制折线
+					this.map.addLayer({
+						id: 'gpath-line',
+						type: 'line',
+						source: 'gpath-line',
+						paint: {
+							'line-color': '#ff00ff',
+							'line-width': 2
+						}
+					});
+				},
+				// 单独监听 LPath
+				"Path.LPath"(newVal) {
+					console.log("LPath 变化:", newVal);
+
+					let LPath = newVal;
+					// 解析 LPath 字符串，跳过第一个 '$LP' 和点的数量
+					let parts = LPath.split(',');
+					let pointCount = parseInt(parts[2], 10); // 第二个值为点的数量
+					let coordinates = [];
+
+					// 从第3个值开始，按每两个数为一对经纬度坐标
+					for (let i = 3; i < parts.length - 1; i += 2) {
+						let lon = parseFloat(parts[i]);
+						let lat = parseFloat(parts[i + 1]);
+						coordinates.push([lon, lat]);
+					}
+					console.log(coordinates);
+
+					// // 如果已有折线，先移除之前的折线
+					// if (this.Lpath_polyline) {
+					// 	this.map.removeLayer(this.Lpath_polyline);
+					// }
+
+					// // 绘制新的折线
+					// this.Lpath_polyline = L.polyline(coordinates, { color: 'blue', zIndex: 10 }).addTo(this.map);
+
+					// 移除旧折线图层和数据源
+					if (this.map.getLayer('lpath-line')) this.map.removeLayer('lpath-line');
+					if (this.map.getSource('lpath-line')) this.map.removeSource('lpath-line');
+
+					// 添加新的 GeoJSON 数据源
+					this.map.addSource('lpath-line', {
+						type: 'geojson',
+						data: {
+							type: 'Feature',
+							geometry: {
+								type: 'LineString',
+								coordinates: coordinates
+							}
+						}
+					});
+
+					// 绘制折线
+					this.map.addLayer({
+						id: 'lpath-line',
+						type: 'line',
+						source: 'lpath-line',
+						paint: {
+							'line-color': '#0000ff',
+							'line-width': 2
+						}
+					});
+
+
+				},
+
+
+				// 监听 showTabs 变化，调整地图大小
+				showTabs(newVal) {
+					if (newVal) {
+						//this.enterFullScreen();
+					}
+					else {
+						//this.exitFullScreen();
+					}
+
+					this.$nextTick(() => {
+						// 调整后刷新地图的大小
+						if (this.map) {
+							this.map.resize();  // 通知地图容器大小发生变化，重新渲染
+							//this.map.invalidateSize();  // 强制重新计算地图容器的大小
+						}
+
+
+					});
+				}
+			}
+		});
+	</script>
+
+
+
+
+
+
+	<script>
+		// window.onload = function () {
+		// 	// 进入全屏
+		// 	const elem = document.documentElement; // 获取 HTML 元素
+		// 	if (elem.requestFullscreen) {
+		// 		elem.requestFullscreen();
+		// 	} else if (elem.mozRequestFullScreen) {  // Firefox
+		// 		elem.mozRequestFullScreen();
+		// 	} else if (elem.webkitRequestFullscreen) {  // Chrome, Safari 和 Opera
+		// 		elem.webkitRequestFullscreen();
+		// 	} else if (elem.msRequestFullscreen) {  // IE 和 Edge
+		// 		elem.msRequestFullscreen();
+		// 	}
+		// };
+	</script>
+
+</body>
+
+</html>

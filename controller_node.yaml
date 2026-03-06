@@ -1,0 +1,29 @@
+/controller_node:
+  ros__parameters:
+    mpc_heading_gains:
+    - 20.0
+    - 10.0
+    - 1.0
+    - 0.1
+    - 0.5
+    pid_heading_gains:
+    - 1.0
+    - 0.0
+    - 0.5
+    pid_rpm_gains:
+    - 0.15
+    - 0.05
+    - 0.0
+    pid_speed_gains:
+    - 6.0
+    - 2.0
+    - 0.0
+    qos_overrides:
+      /parameter_events:
+        publisher:
+          depth: 1000
+          durability: volatile
+          history: keep_last
+          reliability: reliable
+    use_sim_time: false
+
