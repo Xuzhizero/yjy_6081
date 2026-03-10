@@ -87,6 +87,7 @@ class PathPlanningScript:
                 self.clean_path()
                 self.has_deleted_lpath = True
                 print(f"⛔ 跳过规划：status={self.status}, Auto_CA_sw={self.Auto_CA_sw}")
+                # redis_interface.write_speed_control_mode(self.redis_conn, 0) # 新加0305,如果不及时归0,下一次开启时redis就只会保留上一次遗留的值(2)，导致如果这时开启循迹会误判进入航速控制模式
             return   # ⬅️ 硬门控，后面不再执行
         self.has_deleted_lpath = False
 
@@ -132,9 +133,11 @@ class PathPlanningScript:
                 #     print(f"Error during path processing: {e}")
         except KeyboardInterrupt:
             print("Stopping path planning script...")
+            # redis_interface.write_speed_control_mode(self.redis_conn, 0) # 新加0305
             self.clean_path()
         finally:
             print("Path planning script terminated.")
+            # redis_interface.write_speed_control_mode(self.redis_conn, 0) # 新加0305
             
 
 def main():

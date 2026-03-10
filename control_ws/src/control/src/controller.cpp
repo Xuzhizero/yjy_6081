@@ -41,7 +41,7 @@ public:
     Eigen::Vector2d B_d;
 
     // 控制周期，仿真倍速
-    double control_T = 0.1;
+    double control_T = 1;
     int t = 1000 * control_T, simulation_speed = 1;
 
     ControllerNode() : Node("controller_node")
@@ -329,7 +329,7 @@ private:
             // 计算控制量
             u0 = static_cast<int>(pid_RPM.compute(error, interval) + u_now);
             // 限幅
-            u0 = std::max(1, std::min(450, u0));
+            u0 = std::max(1, std::min(330, u0));
         }
 
         count++;
@@ -362,7 +362,7 @@ private:
             // 计算控制量
             u0 = static_cast<int>(pid_speed.compute(error, interval) + u_now);
             // 限幅
-            u0 = std::max(1, std::min(450, u0));
+            u0 = std::max(1, std::min(330, u0));
         }
 
         count++;

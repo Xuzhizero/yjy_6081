@@ -4,7 +4,7 @@
 unit_to_meter=1
 ship_turn_angle=30
 ship_safe_distance=400/unit_to_meter
-ship_tolerance=150/unit_to_meter # goal reach criterum
+ship_tolerance=250/unit_to_meter # goal reach criterum
 # # sim
 init_lonlat = (114.43066862436631, 21.134829191418977)
 speed_scaler = 1

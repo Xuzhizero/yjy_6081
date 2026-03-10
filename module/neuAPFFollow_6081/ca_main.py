@@ -8,9 +8,10 @@ import collision_avoidance
 import redis_interface
 
 class PathPlanningScript:
-    def __init__(self):
+    def __init__(self,Planner_V ):
         self.sim_speed = 1
         self.redis_conn = redis_interface.init_redis()
+        self.Planner_V = Planner_V 
         
         # Heading filter configuration
         self.enable_heading_filter = False  # Change this to False to disable the filter
@@ -78,7 +79,7 @@ class PathPlanningScript:
         # gp = redis_interface.read_global_path(self.redis_conn) # 全局(两个经纬度坐标点)
         gp = redis_interface.read_follow_path(self.redis_conn) # 读取跟随路径
 
-        default_speed = redis_interface.get_default_speed(self.redis_conn)
+        default_speed = self.Planner_V
         self.pathplanner.update(gp, default_speed, rc_state)
         reached = self.pathplanner.do_path_plan(ownship, target_df)
         if reached:

@@ -74,7 +74,7 @@ def read_target_data(redis_conn, ownship, u2m=unit_to_meter):
     # 获取所有键以"data:"为前缀的键
     keys = redis_conn.keys("data:*")
     # 创建空的DataFrame
-    df = pd.DataFrame(columns=['t_idx','lon', 'lat', 'speed', 'heading','dcpa', 'tcpa', 'azimuth', 'distance', 'alarm'])
+    df = pd.DataFrame(columns=['t_idx','lon', 'lat', 'speed', 'heading','dcpa', 'tcpa', 'azimuth', 'distance', 'alarm','size'])
     for key in keys:
         # 从Redis中获取键对应的值
         value = redis_conn.hgetall(key)
@@ -95,7 +95,8 @@ def read_target_data(redis_conn, ownship, u2m=unit_to_meter):
                 float(value["cpTime"]),
                 float(value["azimuth"]),
                 float(value["distance"]),      
-                int(value["Alarmstufe"])
+                int(value["Alarmstufe"]),
+                max(int(float(value["size"])),30)
                 ]
             
     df = df.loc[~((df['lon'] == 1.0) & (df['lat'] == 1.0))]

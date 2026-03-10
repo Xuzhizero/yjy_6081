@@ -6,7 +6,7 @@ author: Atsushi Sakai(@Atsushi_twi)
 
 """
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special
 
@@ -164,56 +164,27 @@ def main():
     # assert path.T[0][-1] == end_x, "path is invalid"
     # assert path.T[1][-1] == end_y, "path is invalid"
 
-    if show_animation:  # pragma: no cover
-        fig, ax = plt.subplots()
-        ax.plot(path.T[0], path.T[1], label="Bezier Path")
-        points = list(zip(path.T[0], path.T[1]))
-        points = list(zip(path.T[0][::10], path.T[1][::10]))
-        print(points)
-        # ax.plot(control_points.T[0], control_points.T[1],
-        #         '--o', label="Control Points")
-        # ax.plot(x_target, y_target)
-        # ax.plot(tangent[:, 0], tangent[:, 1], label="Tangent")
-        # ax.plot(normal[:, 0], normal[:, 1], label="Normal")
-        # ax.add_artist(circle)
-        plot_arrow(sx, sy, s_yaw)
-        plot_arrow(gx, gy, g_yaw)
-        ax.legend()
-        ax.axis("equal")
-        ax.grid(True)
-        plt.show()
+    # if show_animation:  # pragma: no cover
+    #     fig, ax = plt.subplots()
+    #     ax.plot(path.T[0], path.T[1], label="Bezier Path")
+    #     points = list(zip(path.T[0], path.T[1]))
+    #     points = list(zip(path.T[0][::10], path.T[1][::10]))
+    #     print(points)
+    #     # ax.plot(control_points.T[0], control_points.T[1],
+    #     #         '--o', label="Control Points")
+    #     # ax.plot(x_target, y_target)
+    #     # ax.plot(tangent[:, 0], tangent[:, 1], label="Tangent")
+    #     # ax.plot(normal[:, 0], normal[:, 1], label="Normal")
+    #     # ax.add_artist(circle)
+    #     plot_arrow(sx, sy, s_yaw)
+    #     plot_arrow(gx, gy, g_yaw)
+    #     ax.legend()
+    #     ax.axis("equal")
+    #     ax.grid(True)
+    #     plt.show()
 
 
-def main2():
-    """Show the effect of the offset."""
-    start_x = 0.0  # [m]
-    start_y = 0.0  # [m]
-    start_yaw = np.radians(270.0)  # [rad]
 
-    end_x = -10.0  # [m]
-    end_y = -13.0  # [m]
-    end_yaw = np.radians(260.0)  # [rad]
-    print(end_yaw)
-
-    for offset in np.arange(1.0, 5.0, 1.0):
-        path, control_points = calc_4points_bezier_path(
-            start_x, start_y, start_yaw, end_x, end_y, end_yaw, offset)
-        assert path.T[0][0] == start_x, "path is invalid"
-        assert path.T[1][0] == start_y, "path is invalid"
-        assert path.T[0][-1] == end_x, "path is invalid"
-        assert path.T[1][-1] == end_y, "path is invalid"
-
-        if show_animation:  # pragma: no cover
-            print(path.T)
-            plt.plot(path.T[0], path.T[1], label="Offset=" + str(offset))
-
-    if show_animation:  # pragma: no cover
-        plot_arrow(start_x, start_y, start_yaw)
-        plot_arrow(end_x, end_y, end_yaw)
-        plt.legend()
-        plt.axis("equal")
-        plt.grid(True)
-        plt.show()
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ from algo_utility import cal_distance, cal_DCPA_TCPA, closest_point_on_line, che
 from algo_utility import stop_time_estimation, revert_speed_change, smooth_last_segment, calculate_collision_angle
 from para import unit_to_meter, ship_safe_distance
 
-SimTime = 10 # 单步仿真时间
+SimTime = 20 # 单步仿真时间
 SafatyMargin = 1.0 # 领域的安全裕度
 SafatyMargin2 = 1.0 # 领域的安全裕度2
 SafatyMargin3 = 2.0 # 领域的安全裕度3，计算虚拟目标点
@@ -20,7 +20,7 @@ m_scale = MapBound*1852/unit_to_meter # 目标点引力范围
 MaxTurn = 0.8*SimTime # 单步规划的最大转向范围
 apf_num = 7 # 人工势场搜索的点数，为大于等于3的奇数
 ReachRadius = 4*SimTime # 单步的长度=速度*仿真时间
-DomainLength = 250/unit_to_meter # 船舶领域设定的船长(在海上以100米为标准)
+DomainLength = 1/unit_to_meter # 船舶领域设定的船长(在海上以100米为标准)
 SafeTCPA = 300/60 # 判定安全的TCPA值，大于此值看作无避碰风险
 SafeDCPA = 400/1852 # 判定安全的DCPA值，大于此值看作无避碰风险
 MyDomain = {'fore': 9.9*DomainLength,"aft": 9.9*DomainLength, "starb": 1.5*DomainLength, "port": 1.05*DomainLength} # 船舶领域，前、后、右、左，实际避让距离是领域长度*3左右
@@ -384,14 +384,14 @@ class NeuAPF:
 
     def init_ship_domain(self, target_df):
         # 船舶领域，前、后、右、左，实际避让距离是领域长度*3左右
-        target_df['fore'] = MyDomain['fore']
-        target_df['aft'] = MyDomain['aft']
-        target_df['starb'] = MyDomain['starb']
-        target_df['port'] = MyDomain['port']
+        target_df['fore'] = MyDomain['fore']*target_df['size']
+        target_df['aft'] = MyDomain['aft']*target_df['size']
+        target_df['starb'] = MyDomain['starb']*target_df['size']
+        target_df['port'] = MyDomain['port']*target_df['size']
         return target_df
 
     def init_static_domain(self, target_df):
-        target_df.loc[(target_df['dcpa'] > SafeDCPA) | (target_df['tcpa'] > SafeTCPA) | (target_df['tcpa'] < 0) | (target_df['speed'] < 0.51444/unit_to_meter), ['fore', 'aft', 'starb', 'port']] = MyStaticDomain['fore']
+        target_df.loc[(target_df['dcpa'] > SafeDCPA) | (target_df['tcpa'] > SafeTCPA) | (target_df['tcpa'] < 0) | (target_df['speed'] < 0.51444/unit_to_meter), ['fore', 'aft', 'starb', 'port']] = MyStaticDomain['fore']*target_df['size']
         target_df.loc[target_df['speed'] < 0.51444/unit_to_meter, 'speed'] = 0
         return target_df
  
@@ -449,6 +449,7 @@ class NeuAPF:
                 return "CROSS_BACK_A"      
             
             elif 15 <= heading_diff < 100 or 260 < heading_diff <= 345 and (coli_situ == "front" or coli_situ2 == "front"):
+                print("111111111111111111111111111111111111111111111")
                 return "CROSS_BACK"
             
             elif 100 <= heading_diff < 165 or 195 < heading_diff <= 260:
@@ -491,7 +492,7 @@ class NeuAPF:
         return target_df
 
 
-    def dynamic_domain(self, OS, TS, MaxTurn, SimTime, MyStaticDomain, MyDomain):
+    def dynamic_domain(self, OS, TS, MaxTurn, SimTime, MyStaticDomain, MyDomain): # 新加0305
         COG_A = OS.heading
         SOG_A = OS.abs_speed
         COG_B = TS['heading']
@@ -506,7 +507,7 @@ class NeuAPF:
         v_xR = (v_xT - v_x0) * np.cos(np.radians(COG_B)) - (v_yT - v_y0) * np.sin(np.radians(COG_B))  # 相对速度在xy的分量
         v_yR = (v_xT - v_x0) * np.sin(np.radians(COG_B)) + (v_yT - v_y0) * np.cos(np.radians(COG_B))
         
-        domain_y = (v_yR) / MaxTurn * 90 * SimTime / 3
+        domain_y = (v_yR) / MaxTurn * 90 * SimTime / 3 
         domain_x = (v_xR) / MaxTurn * 90 * SimTime / 3  # 动态船舶领域变化太大了md，改小一点免得瞎跑
         
         if v_yR <= 0:
@@ -518,14 +519,14 @@ class NeuAPF:
             # TS['aft'] = TS['aft'] - domain_y if TS['aft'] - domain_y > 150 else 150
         
         if v_xR <= 0:
-            TS['port'] = TS['port'] - domain_x if TS['port'] - domain_x > MyStaticDomain['port'] else MyStaticDomain['port']
+            TS['port'] = TS['port'] - domain_x if TS['port'] - domain_x > MyStaticDomain['port']* TS['size'] else MyStaticDomain['port']* TS['size']
         else:
-            TS['starb'] = TS['starb'] + domain_x if TS['starb'] + domain_x > MyStaticDomain['starb'] else MyStaticDomain['starb']
+            TS['starb'] = TS['starb'] + domain_x if TS['starb'] + domain_x > MyStaticDomain['starb']* TS['size'] else MyStaticDomain['starb']* TS['size']
         
-        if TS['fore'] > MyDomain['fore'] * 1.5:
-            TS['fore'] = MyDomain['fore'] * 1.5
-        if TS['aft'] > MyDomain['aft'] * 1.5:
-            TS['aft'] = MyDomain['aft'] * 1.5
+        if TS['fore'] > MyDomain['fore'] * 1.5 * (TS['size']):
+            TS['fore'] = MyDomain['fore']* TS['size'] * 1.5
+        if TS['aft'] > MyDomain['aft'] * 1.5 * (TS['size']):
+            TS['aft'] = MyDomain['aft']* TS['size'] * 1.5
         
         return TS
 
@@ -546,13 +547,14 @@ class NeuAPF:
         # Pass ownship object for heading change compensation
         target_df = self.apply_heading_filter(target_df, ownship)
         
-        # target_df = self.init_ship_domain(target_df)
-        target_df = self.init_colreg_domain(ownship, target_df)
-        target_df = target_df.apply(lambda ts: self.dynamic_domain(ownship, ts, MaxTurn, SimTime, MyStaticDomain, MyDomain), axis=1)
+        target_df = self.init_ship_domain(target_df)
+        # target_df = self.init_colreg_domain(ownship, target_df)
+        target_df = target_df.apply(lambda ts: self.dynamic_domain(ownship, ts, MaxTurn, SimTime,MyStaticDomain, MyDomain), axis=1)
         target_df = self.init_static_domain(target_df)
 
         # for the rows withe the same values in self.s_domain_tidx in  t_idx column, set the values of theiir fore, aft, starb, port columns to MyStaticDomain['fore']
-        target_df.loc[target_df['t_idx'].isin(self.s_domain_tidx), ['fore', 'aft', 'starb', 'port']] = MyStaticDomain['fore']
+        target_df.loc[target_df['t_idx'].isin(self.s_domain_tidx), ['fore', 'aft', 'starb', 'port']] = MyStaticDomain['fore']*target_df.loc[target_df['t_idx'].isin(self.s_domain_tidx)]['size']
+        print("船舶领域",target_df)
 
         print("plan_speed", self.plan_speed)
         # print("prioritized_t_idx", self.prioritized_t_idx)s

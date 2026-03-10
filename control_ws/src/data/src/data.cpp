@@ -232,6 +232,11 @@ private:
         // 获取路径
         if (!read_from_redis("Navi", "LPath", path) || path.empty() || path == "$LP,-666,0")
         {
+            /////////////////////////////////////////////////////////
+            // 6081专供，GP模式下仅支持挡位控制
+            write_to_redis("Navi", "speed_control_mode", 0);
+            /////////////////////////////////////////////////////////
+
             // 如果LP不存在或为空字符串，找GP
             if (!read_from_redis("Navi", "GPath", path) || path.empty())
             {

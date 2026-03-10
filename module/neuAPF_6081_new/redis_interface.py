@@ -58,7 +58,24 @@ def get_default_speed(redis_conn, default='2'):
         else:
             default_speed = 0
     else:
-        default_speed = float(get_or_default(redis_conn, "Navi", "TargetSpeed", default=default)) * 2
+        default_speed = float(get_or_default(redis_conn, "Navi", "TargetSpeed", default=default))
+        if default_speed == 0:
+            return 0
+        elif default_speed == 1:
+            return 3.0864
+        elif default_speed == 2:  
+            return 4.1152
+        elif default_speed == 3:
+            return 6.1728
+        elif default_speed == 4:
+            return 7.2016
+        elif default_speed == 5:
+            return 9.2592
+        elif default_speed == 6:
+            return 11.3168
+        else:
+            return 0 
+        
     return default_speed
 
 def get_USVSIM_rpm(redis_conn, default=None):
@@ -74,7 +91,7 @@ def read_target_data(redis_conn, ownship, u2m=unit_to_meter):
     # 获取所有键以"data:"为前缀的键
     keys = redis_conn.keys("data:*")
     # 创建空的DataFrame
-    df = pd.DataFrame(columns=['t_idx','lon', 'lat', 'speed', 'heading','dcpa', 'tcpa', 'azimuth', 'distance', 'alarm'])
+    df = pd.DataFrame(columns=['t_idx','lon', 'lat', 'speed', 'heading','dcpa', 'tcpa', 'azimuth', 'distance', 'alarm','size'])
     for key in keys:
         # 从Redis中获取键对应的值
         value = redis_conn.hgetall(key)
@@ -95,7 +112,9 @@ def read_target_data(redis_conn, ownship, u2m=unit_to_meter):
                 float(value["cpTime"]),
                 float(value["azimuth"]),
                 float(value["distance"]),      
-                int(value["Alarmstufe"])
+                int(value["Alarmstufe"]),
+                max(int(float(value["size"])),30)
+                
                 ]
             
     df = df.loc[~((df['lon'] == 1.0) & (df['lat'] == 1.0))]

@@ -8,7 +8,7 @@ import pandas as pd
 import redis_interface
 
 from para import unit_to_meter, ship_safe_distance, ship_tolerance
-from algo_utility import closest_point_on_line, convert_lonlat_to_abs_xy, convert_abs_xy_to_lonlat, convert_lonlat_to_rel_xy, convert_dxy_to_lonlat, get_next_path_point, revert_speed_change, turnfun
+from algo_utility import closest_point_on_line, convert_lonlat_to_abs_xy, convert_abs_xy_to_lonlat, convert_lonlat_to_rel_xy, convert_dxy_to_lonlat, get_next_path_point, revert_speed_change, turnfun,cal_DCPA_TCPA
 from apf import NeuAPF
 from new_alarm import Alarm
 
@@ -47,8 +47,8 @@ class PathPlanning:
         self.speed_control_str = 2 # 变速避碰模式
         self.default_speed = 4 # 巡航速度
         self.turn_speed = 4
-        self.max_speed = 8 # 加速
-        self.min_speed = 1 #减速
+        self.max_speed = 6 # 加速
+        self.min_speed = 2 #减速 新加0305
         self.crit_target_idx = set()
         self.revert_speed_time = datetime.datetime.now()
         self.targeting_speed = self.default_speed
@@ -367,7 +367,7 @@ class PathPlanning:
             print(f"gp_index-=-=-=-=-: {self.gp_index}") 
             # print(f"src_point: {src_point}, dst_point: {dst_point}")   
             # self.targeting_speed = self.default_speed 
-            self.change_speed_to_avoid_all(ship, target_df)   
+            self.change_speed_to_avoid_all(ship, target_df)  
             # self.change_course_to_avoid_one(ship, target_df)
             if self.temp_goal is not None:
                 dst_point = self.temp_goal 
@@ -376,8 +376,9 @@ class PathPlanning:
             self._current_src_point = src_point
             self._current_dst_point = dst_point
             
-            # self.apf_planner.set_plan_speed(self.targeting_speed)       
-            self.apf_planner.set_plan_speed(ship.abs_speed)       
+            self.apf_planner.set_plan_speed(self.targeting_speed)    
+            print("当前航速",self.targeting_speed)   
+            # self.apf_planner.set_plan_speed(ship.abs_speed)       
             
             # Plan new path
             new_lpath = self.apf_planner.do_path_plan(ship, target_df, src_point, dst_point, self.update_rate * 5)
@@ -400,8 +401,9 @@ class PathPlanning:
                     self.last_path_rel_xy = lpath.copy()
                     self.last_path_timestamp = datetime.datetime.now()
                 print("Using new path" + (" (anti-zigzag disabled)" if not self.enable_anti_zigzag else " (fallback)"))
-            
+          
             path_lonlat = [convert_dxy_to_lonlat(p, ship.start_lonlat, self.u2m) for p in lpath] 
+            path_lonlat = [ship.start_lonlat] + path_lonlat
             self.path_str = self.get_LP_string(path_lonlat, self.targeting_speed)
                  
         # elif not self.auto_ca and self.inner_clock % self.update_rate == 0:
@@ -472,26 +474,29 @@ class PathPlanning:
         return pathxy
 
     def speed_to_rpm(self, speed):#实船
+        # print("speedddddd",speed)
         # if speed == 0:
         #     return 0
         # elif speed == -1:
-        #     return 50
+        #     return 1
         # elif speed <= 2:
-        #     return 60
+        #     return 450
         # elif speed <= 4:
-        #     return 70
+        #     return 550
         # elif speed <= 6:
-        #     return 80
+        #     return 650
         # elif speed <= 8:
-        #     return 90
+        #     return 750
         # elif speed > 8:
-        #     return 90
+        #     return 850
         # else:
         #     return 0 
         ###########################################
         # 6081实船
         if speed == 0:
             return 0
+        elif speed == -1:
+            return 3.0864
         elif speed == 2:
             return 3.0864
         elif speed == 4:  
@@ -527,7 +532,7 @@ class PathPlanning:
         # else:
         #     return 0 
         
-    def get_LP_string(self, path_lonlat, targeting_speed=None, u2m=unit_to_meter, rpm_output=True):
+    def get_LP_string(self, path_lonlat, targeting_speed=None, u2m=unit_to_meter, rpm_output=False):
         if not path_lonlat:
             if self.rc_state == 1:
                 return f"$LP,{str(targeting_speed)},0"
@@ -536,13 +541,14 @@ class PathPlanning:
 
         # filter all duplicated points that are next to each other
         path_lonlat = [path_lonlat[i] for i in range(len(path_lonlat)) if i == 0 or path_lonlat[i] != path_lonlat[i-1]]
+        if len(path_lonlat) > 15: # 路径裁减 新加0305
+            path_lonlat = path_lonlat[:15]
         # 将路径转换为字符串
         path_str = ','.join([str(p[0]) + ',' + str(p[1]) for p in path_lonlat])
         if rpm_output:
             targeting_speed = self.speed_to_rpm(targeting_speed)
-            print("target_speed",targeting_speed)
         else:
-            targeting_speed = 2 if targeting_speed == -1 else targeting_speed
+            targeting_speed = targeting_speed
         if targeting_speed is not None:
             path_str = f"$LP,{str(targeting_speed)},{str(len(path_lonlat))},{path_str}"
         else:
@@ -647,7 +653,8 @@ class PathPlanning:
     #     self.apf_planner.reset_s_domain_tidx()
     def change_speed_to_avoid_all(self, ship, target_df):
         self.targeting_speed = self.default_speed  # 新加
-        current_time = datetime.datetime.now() # 新加
+        print("")
+        
 
         target_df_ba = target_df[
         target_df.apply(
@@ -692,11 +699,11 @@ class PathPlanning:
         # if not target_df_ba.empty: # 本船与障碍船形成CROSS_BACK_A局面
         #     self.crit_target_idx.update(set(target_df_ba['t_idx']))
         #     self.targeting_speed = self.max_speed
-
+        print("target_df_b ",target_df_b )
         if not target_df_b.empty: # 本船与障碍船形成CROSS_BACK_B局面
             self.crit_target_idx.update(set(target_df_b['t_idx']))
             self.apf_planner.update_s_domain_tidx(set(target_df_b['t_idx']))
-            self.targeting_speed = self.min_speed 
+            
             
         self.crit_target_idx = set(filter(lambda t_idx: not revert_speed_change(ship, target_df, t_idx), self.crit_target_idx)) # revert_speed_change(...) == True且已到恢复时间
         print(f"crit_target_idx: {self.crit_target_idx}")
@@ -704,14 +711,14 @@ class PathPlanning:
             self.revert_speed_time = current_time + datetime.timedelta(minutes=0.5)
 
         if current_time < self.revert_speed_time:
-            return self.targeting_speed # 新加
-            # return
+            self.targeting_speed = self.min_speed # 新加
+            return
 
         self.revert_speed_time = current_time
         self.targeting_speed = self.default_speed
         self.apf_planner.reset_s_domain_tidx()
 
-        return self.targeting_speed # 新加
+        return 
 
     
     def slow_to_avoid_all(self, ship, target_df):

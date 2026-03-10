@@ -913,12 +913,6 @@ def get_next_path_point(num, line, pos, R1=10.0, r_final=5.0):
     return new_num
 
 
-
-
-
-
-
-
 def quadratic_bezier(p0, p1, p2, t):
     return ((1-t)**2 * np.array(p0) +
             2 * (1-t) * t * np.array(p1) +

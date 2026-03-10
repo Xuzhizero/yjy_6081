@@ -87,6 +87,24 @@ def speed_to_rpm(speed):
             return 11.3168
         else:
             return 0 
+        
+        # # 2D海图模拟器
+        # if speed == 0:
+        #     return 0
+        # elif speed == -1:
+        #     return 450
+        # elif speed <= 1:
+        #     return 500
+        # elif speed <= 2:
+        #     return 600
+        # elif speed <= 3:
+        #     return 700
+        # elif speed <= 4:
+        #     return 800
+        # elif speed > 4:
+        #     return 850
+        # else:
+        #     return 0 
 def write_speed_control_mode(redis_conn, mode_str):
    # 将路径字符串发送到Redis
    redis_conn.hset("Navi", "speed_control_mode", mode_str)
@@ -100,7 +118,7 @@ def calculate_angle(A, B, C):
         A (tuple): 点A的坐标 (X1, Y1)
         B (tuple): 点B的坐标 (X2, Y2)
         C (tuple): 点C的坐标 (X3, Y3)
-
+speed_to_rpm
     返回:
         float: 夹角度数 (0° - 180°)
     """
@@ -371,6 +389,7 @@ if redis_conn:
                 lockedID = redis_conn.hget("Follow_Mode", "lockedID")
                 if lockedID is None:
                     print("⚠️ 尚未锁定目标船，等待中")
+                    # write_speed_control_mode(redis_conn, 0) # 新加0305
                     if avoid_script is not None:
                         print("⛔ 跟随目标已取消，强制退出避碰模式") # 这种做法是否合理？
                         avoid_script.stop()
@@ -422,6 +441,7 @@ if redis_conn:
 
                         target_lat = redis_conn.hget(key_str, "latitude")
                         target_lon = redis_conn.hget(key_str, "longitude")
+                        target_distance = redis_conn.hget(key_str, "distance") # 新加0305
                         target_heading = redis_conn.hget(key_str, "direction")
                         target_speed = redis_conn.hget(key_str, "speed")
                         speed_knot = float(target_speed.decode('utf-8'))
@@ -431,6 +451,7 @@ if redis_conn:
                         slow_V = 1 # 等待速度
                         if any(v is None for v in [target_lat, target_lon, target_heading, target_speed]):
                            raise TargetLostError(f"{key_str} 字段不完整，视为目标丢失")
+                        target_distance = float(target_distance.decode("utf-8")) # 新加0305
                         target_Heading = float(target_heading.decode("utf-8"))
                         target_speed = float(target_speed.decode("utf-8"))
                         target_x, target_y = ip_transform.geodistance(
@@ -583,12 +604,12 @@ if redis_conn:
                         Point1 = [Right_Target1[0], Right_Target1[1]]
                         Point2 = [Right_Target2[0], Right_Target2[1]]
                         Point3 = [Right_Target3[0], Right_Target3[1]]
-                        Point4 = [Right_Target3[0] + 10 * d * math.sin(heading_rad),  
-                                Right_Target3[1] + 10 * d * math.cos(heading_rad)]
-                        Point5 = [Right_Target3[0] + 20 * d * math.sin(heading_rad),
-                                Right_Target3[1] + 20 * d * math.cos(heading_rad)]
-                        Point6 = [Right_Target_goal[0] + 30 * d * math.sin(heading_rad),
-                                Right_Target_goal[1] + 30 * d * math.cos(heading_rad)]
+                        Point4 = [Right_Target3[0] + 6 * d * math.sin(heading_rad),  
+                                Right_Target3[1] + 6 * d * math.cos(heading_rad)]
+                        Point5 = [Right_Target3[0] + 12 * d * math.sin(heading_rad),
+                                Right_Target3[1] + 12 * d * math.cos(heading_rad)]
+                        Point6 = [Right_Target_goal[0] + 18 * d * math.sin(heading_rad),
+                                Right_Target_goal[1] + 18 * d * math.cos(heading_rad)]
 
                         # 假设四个点的坐标为 A(x, y), B(x1, y1), C(x2, y2), D(x3, y3)
                         # 计算向量的表示
@@ -639,7 +660,8 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    Planner_V = default_V
+                                    avoid_script = PathPlanningScript(Planner_V )
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run,
                                         daemon=True)
@@ -678,7 +700,11 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        if Distance_to_Target2 > 100:
+                                            Planner_V=default_V
+                                        else:
+                                            Planner_V=turn_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -715,7 +741,11 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    if Distance_to_Target2 < 100:
+                                        Planner_V = turn_V
+                                    else:
+                                        Planner_V = default_V
+                                    avoid_script = PathPlanningScript(Planner_V)
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run,
                                         daemon=True)
@@ -752,7 +782,11 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    if Distance_to_Target2 > 200:
+                                        Planner_V = default_V
+                                    else:
+                                        Planner_V = turn_V
+                                    avoid_script = PathPlanningScript(Planner_V)
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run, 
                                         daemon=True)
@@ -791,7 +825,8 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    Planner_V = turn_V
+                                    avoid_script = PathPlanningScript(Planner_V)
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run,
                                         daemon=True)
@@ -841,7 +876,8 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        Planner_V=default_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -878,7 +914,11 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        if Distance_to_Target3 > 200:
+                                            Planner_V = default_V
+                                        else:
+                                            Planner_V = turn_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -919,7 +959,8 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        Planner_V = slow_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -930,11 +971,11 @@ if redis_conn:
                                         avoid_script.stop()
                                         avoid_script = None
                                         avoid_thread = None
-                                    print("当前超过目标点，进入逐渐调整航速、航向阶段，追踪掉头第三个点：", Point3)
+                                    print("当前超过目标点，进入逐渐调整航速、航向阶段，追踪掉头第三个点：", Point4)
                                     Planner_V = slow_V
                                     print("当前速度",Planner_V)
-                                    waypoint = [Point4, Point5,Point6]
-                            elif Distance_to_Target_goal < 30:
+                                    waypoint = [Point4, Point5, Point6]
+                            elif Distance_to_Target_goal < 100:
                                 if Distance_to_Target3 > 800:
                                     plan_path_points=[Point0,Point3,Point4]
                                 else:
@@ -956,7 +997,8 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        Planner_V = target_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -1001,7 +1043,8 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        Planner_V = default_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -1038,7 +1081,8 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    Planner_V = default_V
+                                    avoid_script = PathPlanningScript(Planner_V)
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run,
                                         daemon=True)
@@ -1127,9 +1171,9 @@ if redis_conn:
                         Point1 = [Left_TugPosG1[0], Left_TugPosG1[1]]
                         Point2 = [Left_TugPosG2[0], Left_TugPosG2[1]]
                         Point3 = [Left_TugPosG3[0], Left_TugPosG3[1]]
-                        Point4 = [Left_TugPosG3[0] + 10 * d * math.sin(heading_rad), Left_TugPosG3[1] + 10 * d * math.cos(heading_rad)]
-                        Point5 = [Left_TugPosG3[0] + 20 * d * math.sin(heading_rad), Left_TugPosG3[1] + 20 * d * math.cos(heading_rad)]
-                        Point6 = [Left_TugPosG3[0] + 30 * d * math.sin(heading_rad), Left_TugPosG3[1] + 30 * d * math.cos(heading_rad)]
+                        Point4 = [Left_TugPosG3[0] + 6 * d * math.sin(heading_rad), Left_TugPosG3[1] + 6 * d * math.cos(heading_rad)]
+                        Point5 = [Left_TugPosG3[0] + 12 * d * math.sin(heading_rad), Left_TugPosG3[1] + 12 * d * math.cos(heading_rad)]
+                        Point6 = [Left_TugPosG3[0] + 18 * d * math.sin(heading_rad), Left_TugPosG3[1] + 18 * d * math.cos(heading_rad)]
                         Distance_to_Target_goal = math.sqrt(
                             np.square(Left_TugPosG3[0] - x_os) + np.square(Left_TugPosG3[1] - y_os))
                         # 假设四个点的坐标为 A(x, y), B(x1, y1), C(x2, y2), D(x3, y3)
@@ -1186,7 +1230,8 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    Planner_V = default_V
+                                    avoid_script = PathPlanningScript(Planner_V)
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run,
                                         daemon=True)
@@ -1224,7 +1269,11 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        if Distance_to_Target2 > 100:
+                                                Planner_V=default_V
+                                        else:
+                                                Planner_V=turn_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -1261,7 +1310,11 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    if Distance_to_Target2 > 200:
+                                        Planner_V = default_V
+                                    else:
+                                        Planner_V = turn_V
+                                    avoid_script = PathPlanningScript(Planner_V)
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run,
                                         daemon=True)
@@ -1300,7 +1353,11 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    if Distance_to_Target2 > 200:
+                                        Planner_V = default_V
+                                    else:
+                                        Planner_V = turn_V
+                                    avoid_script = PathPlanningScript(Planner_V)
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run,
                                         daemon=True)
@@ -1352,7 +1409,8 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        Planner_V=default_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -1389,7 +1447,11 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        if Distance_to_Target3 > 200:
+                                            Planner_V = default_V
+                                        else:
+                                            Planner_V = turn_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -1430,7 +1492,8 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        Planner_V = slow_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -1441,11 +1504,11 @@ if redis_conn:
                                         avoid_script.stop()
                                         avoid_script = None
                                         avoid_thread = None
-                                    print("当前超过目标点，进入逐渐调整航速、航向阶段，追踪绕尾第三个点：", Point3)
+                                    print("当前超过目标点，进入逐渐调整航速、航向阶段，追踪绕尾第三个点：", Point4)
                                     Planner_V = slow_V
                                     print("当前速度",Planner_V)
-                                    waypoint = [Point4, Point5,Point6]
-                            elif Distance_to_Target3 < 50:
+                                    waypoint = [Point4, Point5, Point6]
+                            elif Distance_to_Target3 < 100:
                                 if Distance_to_Target3 > 800:
                                     plan_path_points=[Point0,Point3,Point4]
                                 else:
@@ -1467,7 +1530,8 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        Planner_V = target_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -1504,7 +1568,8 @@ if redis_conn:
                                 if risk and Auto_CA_sw == "1":
                                     if avoid_script is None:
                                         print("⚠️ 进入避碰模式")
-                                        avoid_script = PathPlanningScript()
+                                        Planner_V = default_V
+                                        avoid_script = PathPlanningScript(Planner_V)
                                         avoid_thread = threading.Thread(
                                             target=avoid_script.run,
                                             daemon=True)
@@ -1540,7 +1605,8 @@ if redis_conn:
                             if risk and Auto_CA_sw == "1":
                                 if avoid_script is None:
                                     print("⚠️ 进入避碰模式")
-                                    avoid_script = PathPlanningScript()
+                                    Planner_V = default_V
+                                    avoid_script = PathPlanningScript(Planner_V)
                                     avoid_thread = threading.Thread(
                                         target=avoid_script.run,
                                         daemon=True)
@@ -1605,21 +1671,19 @@ if redis_conn:
                             calculated_latlon_lists.append([Lon2, Lat2])
                             D_list=len(calculated_latlon_lists)
                         calculated_latlon_lists=','.join(','.join(map(str,pair))for pair in calculated_latlon_lists)#为了符合Redis的输出格式
-                        Distance_to_Target = math.sqrt(
-                            np.square(Target_State[0] - x_os) + np.square(Target_State[1] - y_os))
-                        # print("target_distance",follow_distance*0.5)
-                        if Distance_to_Target < follow_distance*0.5:
-                             value_str = f"$LP,{0},{D_list},{calculated_latlon_lists}"
-                             redis_conn.hset("Navi", "LPath",value_str)
+                        if target_distance < 80: # 距离过近直接停船  # 新加0305
+                            value_str = f"$LP,{0},{D_list},{calculated_latlon_lists}"
+                            redis_conn.hset("Navi", "LPath",value_str)
                         else:
-                             value_str = f"$LP,{Planner_V},{D_list},{calculated_latlon_lists}"
-                             redis_conn.hset("Navi", "LPath",value_str)
+                            value_str = f"$LP,{Planner_V},{D_list},{calculated_latlon_lists}"
+                            redis_conn.hset("Navi", "LPath",value_str)
                     else:
-                        write_speed_control_mode(redis_conn,0)
+                        write_speed_control_mode(redis_conn,2)
                     time.sleep(2)
                 else:
                     if not has_deleted_lpath:
                         redis_conn.hdel("Navi", "LPath")
+                        # write_speed_control_mode(redis_conn, 0) # 新加0305
                         has_deleted_lpath = True
                         print("自主跟随模式未启动,等待中...")
             except TargetLostError as e:
@@ -1632,6 +1696,7 @@ if redis_conn:
                         avoid_script = None
                         avoid_thread = None
                     redis_conn.hdel("Navi", "LPath")
+                    # write_speed_control_mode(redis_conn, 0) # 新加0305
                     has_deleted_lpath = True
                     target_lost = True
                 time.sleep(1)
@@ -1641,11 +1706,13 @@ if redis_conn:
                     f"未捕获异常 | status={status if 'status' in locals() else 'N/A'} "
                     f"| lockedID={lockedID if 'lockedID' in locals() else 'N/A'}")
                 print("❌ 程序发生未预期异常：", e)
+                # write_speed_control_mode(redis_conn, 0) # 新加0305
                 redis_conn.hdel("Navi", "LPath")    
                 time.sleep(1)
                 continue
     except KeyboardInterrupt:
         print("🛑 程序被用户手动停止 (Ctrl+C)")
+        # write_speed_control_mode(redis_conn, 0) # 新加0305
         redis_conn.hdel("Navi", "LPath")
 else:
     print("Redis未连接，无法获取数据")

@@ -397,6 +397,7 @@ class PathPlanning:
                 print("Using new path" + (" (anti-zigzag disabled)" if not self.enable_anti_zigzag else " (fallback)"))
             
             path_lonlat = [convert_dxy_to_lonlat(p, ship.start_lonlat, self.u2m) for p in lpath] 
+            path_lonlat = [ship.start_lonlat] + path_lonlat
             self.path_str = self.get_LP_string(path_lonlat, self.targeting_speed)
                  
         # elif not self.auto_ca and self.inner_clock % self.update_rate == 0:
@@ -484,6 +485,7 @@ class PathPlanning:
         # else:
         #     return 0 
         ###########################################
+        ## 2D海图
         # if speed == 0:
         #     return 0
         # elif speed == -1:
@@ -505,17 +507,17 @@ class PathPlanning:
         # 6081实船
         if speed == 0:
             return 0
-        elif speed == 2:
+        elif speed == 1:
             return 80
-        elif speed == 4:  
+        elif speed == 2:  
             return 180
-        elif speed == 6:
+        elif speed == 3:
             return 280
-        elif speed == 8:
+        elif speed == 4:
             return 310
-        elif speed == 10:
+        elif speed == 5:
             return 360
-        elif speed == 12:
+        elif speed == 6:
             return 450
         else:
             return 0 
@@ -529,10 +531,13 @@ class PathPlanning:
 
         # filter all duplicated points that are next to each other
         path_lonlat = [path_lonlat[i] for i in range(len(path_lonlat)) if i == 0 or path_lonlat[i] != path_lonlat[i-1]]
+        if len(path_lonlat) > 15: # 路径裁减 新加0305
+            path_lonlat = path_lonlat[:15]
         # 将路径转换为字符串
         path_str = ','.join([str(p[0]) + ',' + str(p[1]) for p in path_lonlat])
         if rpm_output:
-            targeting_speed = self.speed_to_rpm(targeting_speed)
+            # targeting_speed = self.speed_to_rpm(targeting_speed)
+            targeting_speed = targeting_speed
         else:
             targeting_speed = 2 if targeting_speed == -1 else targeting_speed
         if targeting_speed is not None:

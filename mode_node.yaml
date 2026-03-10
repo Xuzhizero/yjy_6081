@@ -1,9 +1,9 @@
 /mode_node:
   ros__parameters:
     LOS_parameters:
-    - 200.0
-    - 200.0
-    - 70.0
+    - 150.0
+    - 150.0
+    - 50.0
     - 30.0
     qos_overrides:
       /parameter_events:
